@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BACKEND_CQRS.Domain", "BACK
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BACKEND_CQRS.Infrastructure", "BACKEND_CQRS.Infrastructure\BACKEND_CQRS.Infrastructure.csproj", "{77AA1BFD-2354-4DEC-8640-7E29345B36FA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BACKEND_CQRS.Application", "BACKEND_CQRS.Application\BACKEND_CQRS.Application.csproj", "{6D0F8866-BA7E-42DF-AC5E-8D95A5653398}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BACKEND_CQRS.Api", "BACKEND_CQRS.Api\BACKEND_CQRS.Api.csproj", "{446C3B9A-44B5-408B-8B0C-CA2098242E2A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{77AA1BFD-2354-4DEC-8640-7E29345B36FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77AA1BFD-2354-4DEC-8640-7E29345B36FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77AA1BFD-2354-4DEC-8640-7E29345B36FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D0F8866-BA7E-42DF-AC5E-8D95A5653398}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D0F8866-BA7E-42DF-AC5E-8D95A5653398}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D0F8866-BA7E-42DF-AC5E-8D95A5653398}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D0F8866-BA7E-42DF-AC5E-8D95A5653398}.Release|Any CPU.Build.0 = Release|Any CPU
+		{446C3B9A-44B5-408B-8B0C-CA2098242E2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{446C3B9A-44B5-408B-8B0C-CA2098242E2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{446C3B9A-44B5-408B-8B0C-CA2098242E2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{446C3B9A-44B5-408B-8B0C-CA2098242E2A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
