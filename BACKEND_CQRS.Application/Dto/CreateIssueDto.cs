@@ -6,6 +6,9 @@ namespace BACKEND_CQRS.Application.Dto
     public class CreateIssueDto
     {
         [Required]
+        public Guid ProjectId { get; set; } // <-- Added ProjectId
+
+        [Required]
         public string IssueType { get; set; } // maps to 'Type' in entity
 
         [Required]
@@ -30,6 +33,6 @@ namespace BACKEND_CQRS.Application.Dto
         [Required]
         public int ReporterId { get; set; }
 
-        public string AttachmentUrl { get; set; }
+        public string? AttachmentUrl { get; set; }
     }
 }

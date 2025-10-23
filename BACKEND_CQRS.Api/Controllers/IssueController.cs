@@ -10,7 +10,6 @@ namespace BACKEND_CQRS.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class IssueController : ControllerBase
     {
         private readonly IMediator _mediator;
