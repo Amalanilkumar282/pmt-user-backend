@@ -28,12 +28,9 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("parent_issue_id")]
         public Guid? ParentIssueId { get; set; } // uuid
 
-        [Column("summary")]
-        [Required]
-        public string Summary { get; set; } // text, required
-
         [Column("title")]
-        public string Title { get; set; } // text
+        [Required]
+        public string Title { get; set; } // text, required
 
         [Column("description")]
         public string Description { get; set; } // text
