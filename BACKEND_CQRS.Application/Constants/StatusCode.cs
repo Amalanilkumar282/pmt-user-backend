@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FRONTEND_CQRS.Application.Constants
+namespace BACKEND_CQRS.Application.Constants
 {
     public class StatusCode
     {

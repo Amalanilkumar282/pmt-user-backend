@@ -1,6 +1,6 @@
 ﻿using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query;
-using FRONTEND_CQRS.Application.Wrapper;
+using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;

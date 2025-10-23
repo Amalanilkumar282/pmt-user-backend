@@ -3,7 +3,7 @@ using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query;
 using BACKEND_CQRS.Domain.Persistance;
 using BACKEND_CQRS.Infrastructure.Context;
-using FRONTEND_CQRS.Application.Wrapper;
+using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;

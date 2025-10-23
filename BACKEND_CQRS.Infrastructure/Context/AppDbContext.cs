@@ -14,6 +14,6 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<Users> Users { get; set; }
         public DbSet<Projects> Projects { get; set; }
         public DbSet<ProjectMembers> ProjectMembers { get; set; } // ✅ Added ProjectMember
-
+        public DbSet<Issue> Issues { get; set; } // Changed to singular Issue
     }
 }

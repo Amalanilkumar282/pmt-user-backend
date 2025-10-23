@@ -1,11 +1,11 @@
-﻿using FRONTEND_CQRS.Application.Constants;
+﻿using BACKEND_CQRS.Application.Constants;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FRONTEND_CQRS.Application.Wrapper
+namespace BACKEND_CQRS.Application.Wrapper
 {
     public class ApiResponse<T>
     {
