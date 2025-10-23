@@ -56,8 +56,8 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("story_points")]
         public int? StoryPoints { get; set; }
 
-        [Column("labels")]
-        public JsonNode Labels { get; set; }
+        [Column("labels", TypeName = "jsonb")]
+        public string Labels { get; set; }
 
         [Column("start_date")]
         public DateTimeOffset? StartDate { get; set; }
@@ -78,6 +78,6 @@ namespace BACKEND_CQRS.Domain.Entities
         public DateTimeOffset? UpdatedAt { get; set; }
 
         [Column("attachment_url")]
-        public string AttachmentUrl { get; set; }
+        public string? AttachmentUrl { get; set; }
     }
 }

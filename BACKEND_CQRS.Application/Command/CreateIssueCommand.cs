@@ -7,6 +7,7 @@ namespace BACKEND_CQRS.Application.Command
 {
     public class CreateIssueCommand : IRequest<ApiResponse<CreateIssueDto>>
     {
+        public Guid ProjectId { get; set; } // <-- Added ProjectId
         public string IssueType { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
@@ -18,6 +19,6 @@ namespace BACKEND_CQRS.Application.Command
         public int? StoryPoints { get; set; }
         public Guid? EpicId { get; set; }
         public int ReporterId { get; set; }
-        public string AttachmentUrl { get; set; }
+        public string? AttachmentUrl { get; set; }
     }
 }
