@@ -1,5 +1,5 @@
 ﻿using BACKEND_CQRS.Application.Dto;
-using FRONTEND_CQRS.Application.Wrapper;
+using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
 using System.Collections.Generic;
 
