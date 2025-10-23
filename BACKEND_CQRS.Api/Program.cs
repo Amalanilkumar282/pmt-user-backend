@@ -1,15 +1,41 @@
+using BACKEND_CQRS.Application;
+using BACKEND_CQRS.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ------------------------- CORS -------------------------
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularDev", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200") // Angular dev server
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// ------------------------- Services -------------------------
+// Application layer (AutoMapper, MediatR, FluentValidation)
+builder.Services.AddApplicationServices();
+
+// Infrastructure layer (DbContext, Repositories, Services, Logging)
+builder.Services.AddPersistenceServices(builder.Configuration);
+
+// ------------------------- Controllers -------------------------
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
+
+// ------------------------- Swagger -------------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ------------------------- Middleware -------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -17,6 +43,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAngularDev");
 
 app.UseAuthorization();
 

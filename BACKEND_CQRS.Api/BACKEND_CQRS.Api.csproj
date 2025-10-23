@@ -10,4 +10,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\BACKEND_CQRS.Application\BACKEND_CQRS.Application.csproj" />
+  </ItemGroup>
+
 </Project>
