@@ -16,7 +16,7 @@ namespace BACKEND_CQRS.Domain.Entities
 
         [Column("name")]
         [Required]
-        public string Name { get; set; } // Now required
+        public string Name { get; set; } 
 
         [Column("sprint_goal")]
         public string? SprintGoal { get; set; }
