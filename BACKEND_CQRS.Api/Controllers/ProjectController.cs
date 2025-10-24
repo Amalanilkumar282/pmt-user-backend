@@ -26,5 +26,13 @@ namespace BACKEND_CQRS.Api.Controllers
             var result = await _mediator.Send(query);
             return result;
         }
+
+        [HttpGet("{projectId}/users")]
+        public async Task<ApiResponse<List<UserDto>>> GetUsersByProject(Guid projectId)
+        {
+            var query = new GetUsersByProjectIdQuery(projectId);
+            var result = await _mediator.Send(query);
+            return result;
+        }
     }
 }
