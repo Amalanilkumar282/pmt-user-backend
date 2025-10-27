@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace BACKEND_CQRS.Domain.Entities
 {
+    [Table("users")]
     public class Users
     {
         [Key]
