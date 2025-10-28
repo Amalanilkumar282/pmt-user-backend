@@ -22,6 +22,7 @@
 		<!-- ✅ PostgreSQL Provider for EF Core (Supabase compatible) -->
 		<PackageReference Include="Npgsql" Version="8.0.4" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+		<PackageReference Include="supabase-csharp" Version="0.16.2" />
 	</ItemGroup>
 	
 
