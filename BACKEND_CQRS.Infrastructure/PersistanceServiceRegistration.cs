@@ -4,8 +4,6 @@ using BACKEND_CQRS.Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
-using System;
 
 
 namespace BACKEND_CQRS.Infrastructure
@@ -29,6 +27,7 @@ namespace BACKEND_CQRS.Infrastructure
             // Repositories
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<ITeamRepository, TeamRepository>();
             //services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 
             //// Services
