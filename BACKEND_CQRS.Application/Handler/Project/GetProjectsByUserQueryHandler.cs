@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using BACKEND_CQRS.Application.Dto;
-using BACKEND_CQRS.Application.Query;
 using BACKEND_CQRS.Domain.Persistance;
 using BACKEND_CQRS.Infrastructure.Context;
 using BACKEND_CQRS.Application.Wrapper;
@@ -10,8 +9,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BACKEND_CQRS.Application.Query.Project;
 
-namespace BACKEND_CQRS.Application.Handler
+namespace BACKEND_CQRS.Application.Handler.Project
 {
     public class GetUserProjectsQueryHandler : IRequestHandler<GetUserProjectsQuery, ApiResponse<List<ProjectDto>>>
     {

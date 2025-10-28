@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Nodes;
 
 namespace BACKEND_CQRS.Domain.Entities
 {
@@ -14,7 +13,7 @@ namespace BACKEND_CQRS.Domain.Entities
         public Guid Id { get; set; }
 
         [Column("key")]
-        public string Key { get; set; }
+        public string? Key { get; set; }
 
         [Column("project_id")]
         [Required]
@@ -34,17 +33,17 @@ namespace BACKEND_CQRS.Domain.Entities
         public string Title { get; set; }
 
         [Column("description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [Column("type")]
         [Required]
         public string Type { get; set; }
 
         [Column("priority")]
-        public string Priority { get; set; }
+        public string? Priority { get; set; }
 
         [Column("status")]
-        public string Status { get; set; }
+        public int ?Status { get; set; }
 
         [Column("assignee_id")]
         public int? AssigneeId { get; set; }
@@ -57,7 +56,7 @@ namespace BACKEND_CQRS.Domain.Entities
         public int? StoryPoints { get; set; }
 
         [Column("labels", TypeName = "jsonb")]
-        public string Labels { get; set; }
+        public string? Labels { get; set; }
 
         [Column("start_date")]
         public DateTimeOffset? StartDate { get; set; }

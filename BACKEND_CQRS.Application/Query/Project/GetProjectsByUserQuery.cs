@@ -3,7 +3,7 @@ using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
 using System.Collections.Generic;
 
-namespace BACKEND_CQRS.Application.Query
+namespace BACKEND_CQRS.Application.Query.Project
 {
     public class GetUserProjectsQuery : IRequest<ApiResponse<List<ProjectDto>>>
     {
