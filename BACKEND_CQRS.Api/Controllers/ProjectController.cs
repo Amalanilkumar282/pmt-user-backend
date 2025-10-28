@@ -1,5 +1,6 @@
 ﻿using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query;
+using BACKEND_CQRS.Application.Query.Project;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -31,6 +32,14 @@ namespace BACKEND_CQRS.Api.Controllers
         public async Task<ApiResponse<List<UserDto>>> GetUsersByProject(Guid projectId)
         {
             var query = new GetUsersByProjectIdQuery(projectId);
+            var result = await _mediator.Send(query);
+            return result;
+        }
+
+        [HttpGet("recent")]
+        public async Task<ApiResponse<List<ProjectDto>>> GetRecentProjects([FromQuery] int take = 10)
+        {
+            var query = new GetRecentProjectsQuery(take);
             var result = await _mediator.Send(query);
             return result;
         }

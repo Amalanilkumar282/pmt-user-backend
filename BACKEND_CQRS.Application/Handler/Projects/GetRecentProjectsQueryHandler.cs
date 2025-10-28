@@ -1,40 +1,41 @@
 ﻿using AutoMapper;
 using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query;
-using BACKEND_CQRS.Domain.Persistance;
-using BACKEND_CQRS.Infrastructure.Context;
 using BACKEND_CQRS.Application.Wrapper;
+using BACKEND_CQRS.Infrastructure.Context;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace BACKEND_CQRS.Application.Handler
+namespace BACKEND_CQRS.Application.Handler.Projects
 {
-    public class GetUserProjectsQueryHandler : IRequestHandler<GetUserProjectsQuery, ApiResponse<List<ProjectDto>>>
+    public class GetRecentProjectsQueryHandler : IRequestHandler<GetRecentProjectsQuery, ApiResponse<List<ProjectDto>>>
     {
         private readonly IMapper _mapper;
         private readonly AppDbContext _dbContext;
 
-        public GetUserProjectsQueryHandler(IMapper mapper, AppDbContext dbContext)
+        public GetRecentProjectsQueryHandler(IMapper mapper, AppDbContext dbContext)
         {
             _mapper = mapper;
             _dbContext = dbContext;
         }
 
-        public async Task<ApiResponse<List<ProjectDto>>> Handle(GetUserProjectsQuery request, CancellationToken cancellationToken)
+        public async Task<ApiResponse<List<ProjectDto>>> Handle(GetRecentProjectsQuery request, CancellationToken cancellationToken)
         {
-            // Query projects where user is a member
+            // Query recent projects ordered by UpdatedAt descending, exclude deleted
             var projects = await _dbContext.Projects
-                .Where(p => _dbContext.ProjectMembers
-                                       .Any(pm => pm.ProjectId == p.Id && pm.UserId == request.UserId))
+                .Where(p => p.DeletedAt == null)
+                .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
+                .Take(request.Take)
                 .ToListAsync(cancellationToken);
 
             if (projects == null || !projects.Any())
             {
-                return ApiResponse<List<ProjectDto>>.Fail("No projects found for this user.");
+                return ApiResponse<List<ProjectDto>>.Fail("No recent projects found.");
             }
 
             // Map entities to DTOs
@@ -42,4 +43,4 @@ namespace BACKEND_CQRS.Application.Handler
             return ApiResponse<List<ProjectDto>>.Success(projectDtos);
         }
     }
-}
+    }
