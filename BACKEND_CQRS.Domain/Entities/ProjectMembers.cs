@@ -20,9 +20,7 @@ namespace BACKEND_CQRS.Domain.Entities
             [Column("project_id")]
             public Guid ProjectId { get; set; }
 
-            [Column("team_id")]
-            public int? TeamId { get; set; }
-
+            
             [Column("user_id")]
             public int? UserId { get; set; }
 
@@ -30,7 +28,7 @@ namespace BACKEND_CQRS.Domain.Entities
             public int? RoleId { get; set; }
 
             [Column("project_role")]
-            public string ProjectRole { get; set; }
+            public string? ProjectRole { get; set; }
 
             [Column("is_owner")]
             public bool? IsOwner { get; set; }
@@ -40,7 +38,16 @@ namespace BACKEND_CQRS.Domain.Entities
 
             [Column("added_by")]
             public int? AddedBy { get; set; }
-        }
+
+        [ForeignKey("UserId")]
+        public Users? User { get; set; }  // ✅ Add this navigation property
+
+        [ForeignKey("ProjectId")]
+        public Projects? Project { get; set; }
+
+
+
+    }
     }
 
 
