@@ -16,5 +16,8 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<ProjectMembers> ProjectMembers { get; set; } // ✅ Added ProjectMember
         public DbSet<Issue> Issues { get; set; } // Changed to singular Issue
         public DbSet<Sprint> Sprints { get; set; } // ✅ Added Sprint entity
+
+        public DbSet<Teams> Teams { get; set; }
+        public DbSet<Label> Labels { get; set; }
     }
 }
