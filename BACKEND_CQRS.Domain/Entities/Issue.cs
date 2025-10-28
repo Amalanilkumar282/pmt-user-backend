@@ -44,7 +44,7 @@ namespace BACKEND_CQRS.Domain.Entities
         public string Priority { get; set; }
 
         [Column("status")]
-        public string Status { get; set; }
+        public int? StatusId { get; set; } // Changed to int? and renamed to StatusId
 
         [Column("assignee_id")]
         public int? AssigneeId { get; set; }
