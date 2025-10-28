@@ -32,5 +32,12 @@ namespace BACKEND_CQRS.Api.Controllers
             var result = await _mediator.Send(new GetAllLabelsQuery());
             return result;
         }
+
+        [HttpPut]
+        public async Task<ApiResponse<int>> EditLabel([FromBody] EditLabelCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result;
+        }
     }
 }
