@@ -9,7 +9,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BACKEND_CQRS.Application.Handler.Sprints
+namespace BACKEND_CQRS.Application.Handler.Sprints 
 {
     public class CreateSprintCommandHandler : IRequestHandler<CreateSprintCommand, ApiResponse<CreateSprintDto>>
     {

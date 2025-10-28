@@ -18,5 +18,6 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<Sprint> Sprints { get; set; } // ✅ Added Sprint entity
 
         public DbSet<Teams> Teams { get; set; }
+        public DbSet<Label> Labels { get; set; }
     }
 }
