@@ -35,5 +35,13 @@ namespace BACKEND_CQRS.Api.Controllers
             var result = await _mediator.Send(query);
             return result;
         }
+
+        [HttpGet("recent")]
+        public async Task<ApiResponse<List<ProjectDto>>> GetRecentProjects([FromQuery] int take = 10)
+        {
+            var query = new GetRecentProjectsQuery(take);
+            var result = await _mediator.Send(query);
+            return result;
+        }
     }
 }
