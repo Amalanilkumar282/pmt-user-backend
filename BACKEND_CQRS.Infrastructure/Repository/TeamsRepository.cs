@@ -40,9 +40,12 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                     Project = t.Project,
                     Lead = t.Lead,
 
-                    // 👇 Number of users in each team (from projectmembers)
-                    MemberCount = _context.ProjectMembers
-                        .Count(pm => pm.TeamId == t.Id && pm.ProjectId == projectId),
+                    MemberCount = _context.TeamMembers
+                               .Count(tm => tm.TeamId == t.Id &&
+                                            _context.ProjectMembers
+                                                .Any(pm => pm.Id == tm.ProjectMemberId &&
+                                                           pm.ProjectId == projectId)),
+
 
                     // 👇 Number of *active* sprints in each team (from sprints)
                     ActiveSprintCount = _context.Sprints
