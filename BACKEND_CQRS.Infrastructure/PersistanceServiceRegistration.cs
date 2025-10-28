@@ -30,7 +30,10 @@ namespace BACKEND_CQRS.Infrastructure
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<ITeamRepository, TeamRepository>();
             services.AddScoped<ILabelRepository, LabelRepository>();
-            //services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IIssueRepository, IssueRepository>();
+
+
 
             //// Services
             //services.AddScoped<IAuthService, AuthService>();
