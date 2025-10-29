@@ -64,6 +64,10 @@ namespace BACKEND_CQRS.Domain.Entities
 
         [ForeignKey("UpdatedBy")]
         public Users? Updater { get; set; }
+
+        // Collection for board columns (not mapped to DB directly)
+        [NotMapped]
+        public List<BoardColumn> BoardColumns { get; set; } = new();
     }
 
 }

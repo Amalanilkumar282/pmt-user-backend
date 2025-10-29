@@ -15,14 +15,14 @@ namespace BACKEND_CQRS.Infrastructure
         {
             // Add PostgreSQL / Supabase connection
             services.AddDbContext<AppDbContext>(options =>
-     options.UseNpgsql(
-         configuration.GetConnectionString("DefaultConnection"),
-         npgsqlOptions =>
-         {
-             npgsqlOptions.EnableRetryOnFailure(); // keep automatic retry
-         }
-     )
- );
+                options.UseNpgsql(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    npgsqlOptions =>
+                    {
+                        npgsqlOptions.EnableRetryOnFailure(); // keep automatic retry
+                    }
+                )
+            );
 
 
             // Repositories
@@ -30,17 +30,19 @@ namespace BACKEND_CQRS.Infrastructure
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<ITeamRepository, TeamRepository>();
             services.AddScoped<ILabelRepository, LabelRepository>();
+            services.AddScoped<IBoardRepository, BoardRepository>();
+            services.AddScoped<IStatusRepository, StatusRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IIssueRepository, IssueRepository>();
             //services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 
-            //// Services
+            // Services
+            services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
             //services.AddScoped<IAuthService, AuthService>();
 
             // Logging
 
             // MediatR
-
-            // Register Supabase Storage Service
-            services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
 
             return services;
         }
