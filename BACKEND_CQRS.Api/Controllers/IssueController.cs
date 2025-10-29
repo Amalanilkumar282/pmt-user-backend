@@ -52,6 +52,16 @@ namespace BACKEND_CQRS.Api.Controllers
             return issues;
         }
 
+        [HttpGet("project/{projectId}/user/{userId}/issues")]
+        public async Task<ApiResponse<List<IssueDto>>> GetIssuesByProjectAndUser(
+            [FromRoute] Guid projectId,
+            [FromRoute] int userId)
+        {
+            var query = new GetIssuesByProjectAndUserQuery(projectId, userId);
+            var issues = await _mediator.Send(query);
+            return issues;
+        }
+
         [HttpGet("project/{projectId}/type-count")]
         public async Task<ApiResponse<Dictionary<string, int>>> GetTypeCountByProject([FromRoute] Guid projectId)
         {
