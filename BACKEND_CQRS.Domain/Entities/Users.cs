@@ -54,5 +54,7 @@ namespace BACKEND_CQRS.Domain.Entities
 
         [Column("type")]
         public string Type { get; set; }
+
+        public ICollection<ProjectMembers> ProjectMembers { get; set; }
     }
 }

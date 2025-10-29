@@ -45,6 +45,9 @@ namespace BACKEND_CQRS.Domain.Entities
         public Projects? Project { get; set; }
 
 
+        [ForeignKey("RoleId")]
+        public Role? Role { get; set; }  // ✅ Add this line
+
 
     }
     }
