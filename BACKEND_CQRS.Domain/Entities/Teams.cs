@@ -13,6 +13,7 @@ namespace BACKEND_CQRS.Domain.Entities
     public class Teams
     {
         [Column("id")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         [Column("project_id")]
@@ -24,6 +25,7 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("description")]
         public string? Description { get; set; }
 
+        // 🔹 LeadId now references ProjectMembers.Id
         [Column("lead_id")]
         public int? LeadId { get; set; }
 
@@ -42,19 +44,20 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
 
-        // 👇 The only column that’s capitalized in DB — must match exactly
         [Column("Label")]
         public List<string>? Label { get; set; }
 
-        // No "virtual" — CQRS prefers explicit loading
+        // 🔹 Lead is now a ProjectMember, not a User
         [ForeignKey("LeadId")]
-        public Users? Lead { get; set; }
+        public ProjectMembers? Lead { get; set; }
 
+        // ✅ These remain linked to the Users table
         [ForeignKey("CreatedBy")]
-        public Users? CreatedByUser { get; set; }
+        public ProjectMembers? CreatedByMember { get; set; }
+
 
         [ForeignKey("UpdatedBy")]
-        public Users? UpdatedByUser { get; set; }
+        public ProjectMembers? UpdatedByMember { get; set; }
 
         [ForeignKey("ProjectId")]
         public Projects? Project { get; set; }
@@ -64,7 +67,7 @@ namespace BACKEND_CQRS.Domain.Entities
 
         [NotMapped]
         public int ActiveSprintCount { get; set; }
-    } 
     }
+}
 
 
