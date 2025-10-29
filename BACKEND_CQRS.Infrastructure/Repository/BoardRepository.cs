@@ -98,5 +98,122 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                     ex);
             }
         }
+
+        public async Task<bool> BoardExistsAsync(int boardId)
+        {
+            try
+            {
+                return await _context.Boards.AnyAsync(b => b.Id == boardId && b.IsActive);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error checking if board {BoardId} exists", boardId);
+                throw new InvalidOperationException($"An error occurred while checking board existence", ex);
+            }
+        }
+
+        public async Task<List<BoardColumn>> GetBoardColumnsAsync(int boardId)
+        {
+            try
+            {
+                _logger?.LogInformation("Fetching columns for board {BoardId}", boardId);
+
+                var columns = await _context.BoardBoardColumnMaps
+                    .Where(m => m.BoardId == boardId)
+                    .Include(m => m.BoardColumn)
+                        .ThenInclude(bc => bc!.Status)
+                    .Select(m => m.BoardColumn!)
+                    .Where(bc => bc != null)
+                    .OrderBy(bc => bc.Position ?? int.MaxValue)
+                    .ToListAsync();
+
+                _logger?.LogInformation("Found {ColumnCount} columns for board {BoardId}", columns.Count, boardId);
+
+                return columns;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error fetching columns for board {BoardId}", boardId);
+                throw new InvalidOperationException($"An error occurred while fetching board columns", ex);
+            }
+        }
+
+        public async Task ShiftColumnPositionsAsync(int boardId, int fromPosition)
+        {
+            try
+            {
+                _logger?.LogInformation("Shifting column positions for board {BoardId} from position {Position}", 
+                    boardId, fromPosition);
+
+                // Get all columns that need to be shifted (position >= fromPosition)
+                var columnsToShift = await _context.BoardBoardColumnMaps
+                    .Where(m => m.BoardId == boardId)
+                    .Include(m => m.BoardColumn)
+                    .Where(m => m.BoardColumn!.Position >= fromPosition)
+                    .Select(m => m.BoardColumn!)
+                    .ToListAsync();
+
+                // Shift each column's position by 1
+                foreach (var column in columnsToShift)
+                {
+                    column.Position = (column.Position ?? 0) + 1;
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger?.LogInformation("Successfully shifted {Count} columns for board {BoardId}", 
+                    columnsToShift.Count, boardId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error shifting column positions for board {BoardId}", boardId);
+                throw new InvalidOperationException($"An error occurred while shifting column positions", ex);
+            }
+        }
+
+        public async Task<BoardColumn> CreateBoardColumnAsync(int boardId, BoardColumn boardColumn)
+        {
+            // Use a transaction to ensure atomicity
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                _logger?.LogInformation("Creating board column for board {BoardId} at position {Position}", 
+                    boardId, boardColumn.Position);
+
+                // Step 1: Add the BoardColumn
+                await _context.BoardColumns.AddAsync(boardColumn);
+                await _context.SaveChangesAsync();
+
+                _logger?.LogInformation("Created board column with ID {ColumnId}", boardColumn.Id);
+
+                // Step 2: Create the mapping between board and column
+                var mapping = new BoardBoardColumnMap
+                {
+                    BoardId = boardId,
+                    BoardColumnId = boardColumn.Id,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                await _context.BoardBoardColumnMaps.AddAsync(mapping);
+                await _context.SaveChangesAsync();
+
+                _logger?.LogInformation("Created board-column mapping with ID {MappingId}", mapping.Id);
+
+                // Commit the transaction
+                await transaction.CommitAsync();
+
+                _logger?.LogInformation("Successfully created board column and mapping");
+
+                return boardColumn;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger?.LogError(ex, "Error creating board column for board {BoardId}. Transaction rolled back.", boardId);
+                throw new InvalidOperationException($"An error occurred while creating board column", ex);
+            }
+        }
     }
 }

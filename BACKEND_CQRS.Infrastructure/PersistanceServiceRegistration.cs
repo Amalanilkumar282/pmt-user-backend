@@ -1,7 +1,6 @@
 ﻿using BACKEND_CQRS.Domain.Persistance;
 using BACKEND_CQRS.Infrastructure.Context;
 using BACKEND_CQRS.Infrastructure.Repository;
-using BACKEND_CQRS.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,11 +29,8 @@ namespace BACKEND_CQRS.Infrastructure
             services.AddScoped<IProjectRepository, ProjectRepository>();
             services.AddScoped<ITeamRepository, TeamRepository>();
             services.AddScoped<ILabelRepository, LabelRepository>();
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IIssueRepository, IssueRepository>();
-
-
             services.AddScoped<IBoardRepository, BoardRepository>();
+            services.AddScoped<IStatusRepository, StatusRepository>();
             //services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 
             //// Services
@@ -43,9 +39,6 @@ namespace BACKEND_CQRS.Infrastructure
             // Logging
 
             // MediatR
-
-            // Register Supabase Storage Service
-            services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
 
             return services;
         }

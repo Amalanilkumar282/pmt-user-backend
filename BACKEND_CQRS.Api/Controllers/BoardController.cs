@@ -1,3 +1,4 @@
+using BACKEND_CQRS.Application.Command;
 using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query;
 using BACKEND_CQRS.Application.Wrapper;
@@ -75,6 +76,58 @@ namespace BACKEND_CQRS.Api.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     ApiResponse<object>.Fail("An unexpected error occurred while fetching boards. Please contact support if the issue persists."));
+            }
+        }
+
+        /// <summary>
+        /// Create a new board column
+        /// </summary>
+        /// <param name="command">The board column creation details</param>
+        /// <returns>Created board column details</returns>
+        /// <response code="201">Board column created successfully</response>
+        /// <response code="400">If the input is invalid or board doesn't exist</response>
+        /// <response code="500">If a server error occurs</response>
+        [HttpPost("column")]
+        [ProducesResponseType(typeof(ApiResponse<CreateBoardColumnResponseDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<CreateBoardColumnResponseDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<CreateBoardColumnResponseDto>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<CreateBoardColumnResponseDto>>> CreateBoardColumn(
+            [FromBody] CreateBoardColumnCommand command)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    var errors = string.Join("; ", ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage));
+                    
+                    _logger.LogWarning("Invalid model state for CreateBoardColumn: {Errors}", errors);
+                    return BadRequest(ApiResponse<CreateBoardColumnResponseDto>.Fail($"Validation failed: {errors}"));
+                }
+
+                _logger.LogInformation("API request received to create board column for board: {BoardId}", command.BoardId);
+
+                var result = await _mediator.Send(command);
+
+                if (result.Status == 201)
+                {
+                    return CreatedAtAction(
+                        nameof(CreateBoardColumn),
+                        new { id = result.Data?.ColumnId },
+                        result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred in BoardController.CreateBoardColumn for board: {BoardId}", 
+                    command?.BoardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<CreateBoardColumnResponseDto>.Fail(
+                        "An unexpected error occurred while creating board column. Please contact support if the issue persists."));
             }
         }
     }
