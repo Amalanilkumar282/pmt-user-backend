@@ -211,6 +211,34 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             }
         }
 
+        public async Task<BoardColumn?> GetBoardColumnByIdAsync(Guid columnId)
+        {
+            try
+            {
+                _logger?.LogInformation("Fetching board column {ColumnId}", columnId);
+
+                var column = await _context.BoardColumns
+                    .Include(bc => bc.Status)
+                    .FirstOrDefaultAsync(bc => bc.Id == columnId);
+
+                if (column != null)
+                {
+                    _logger?.LogInformation("Found board column {ColumnId}: {ColumnName}", columnId, column.BoardColumnName);
+                }
+                else
+                {
+                    _logger?.LogWarning("Board column {ColumnId} not found", columnId);
+                }
+
+                return column;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error fetching board column {ColumnId}", columnId);
+                throw new InvalidOperationException($"An error occurred while fetching board column", ex);
+            }
+        }
+
         public async Task ShiftColumnPositionsAsync(int boardId, int fromPosition)
         {
             try
@@ -241,6 +269,110 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             {
                 _logger?.LogError(ex, "Error shifting column positions for board {BoardId}", boardId);
                 throw new InvalidOperationException($"An error occurred while shifting column positions", ex);
+            }
+        }
+
+        public async Task ReorderColumnPositionsAfterDeleteAsync(int boardId, int deletedPosition)
+        {
+            try
+            {
+                _logger?.LogInformation("Reordering columns for board {BoardId} after deletion at position {Position}", 
+                    boardId, deletedPosition);
+
+                // Get all columns with position greater than the deleted position
+                var columnsToReorder = await _context.BoardBoardColumnMaps
+                    .Where(m => m.BoardId == boardId)
+                    .Include(m => m.BoardColumn)
+                    .Where(m => m.BoardColumn!.Position > deletedPosition)
+                    .Select(m => m.BoardColumn!)
+                    .ToListAsync();
+
+                // Decrease each column's position by 1 to fill the gap
+                foreach (var column in columnsToReorder)
+                {
+                    column.Position = (column.Position ?? 0) - 1;
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger?.LogInformation("Successfully reordered {Count} columns for board {BoardId}", 
+                    columnsToReorder.Count, boardId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error reordering column positions for board {BoardId}", boardId);
+                throw new InvalidOperationException($"An error occurred while reordering column positions", ex);
+            }
+        }
+
+        public async Task<bool> DeleteBoardColumnAsync(Guid columnId, int boardId)
+        {
+            try
+            {
+                _logger?.LogInformation("Deleting board column {ColumnId} from board {BoardId}", columnId, boardId);
+
+                // Use the execution strategy to handle retries with transactions
+                var strategy = _context.Database.CreateExecutionStrategy();
+                
+                return await strategy.ExecuteAsync(async () =>
+                {
+                    // Use a transaction to ensure atomicity
+                    using var transaction = await _context.Database.BeginTransactionAsync();
+
+                    try
+                    {
+                        // Step 1: Find the board-column mapping
+                        var mapping = await _context.BoardBoardColumnMaps
+                            .Include(m => m.BoardColumn)
+                            .FirstOrDefaultAsync(m => m.BoardColumnId == columnId && m.BoardId == boardId);
+
+                        if (mapping == null)
+                        {
+                            _logger?.LogWarning("Board-column mapping not found for column {ColumnId} and board {BoardId}", 
+                                columnId, boardId);
+                            return false;
+                        }
+
+                        var deletedPosition = mapping.BoardColumn?.Position ?? 0;
+
+                        // Step 2: Delete the mapping
+                        _context.BoardBoardColumnMaps.Remove(mapping);
+                        await _context.SaveChangesAsync();
+
+                        _logger?.LogInformation("Deleted board-column mapping for column {ColumnId}", columnId);
+
+                        // Step 3: Delete the BoardColumn itself
+                        var boardColumn = await _context.BoardColumns.FindAsync(columnId);
+                        if (boardColumn != null)
+                        {
+                            _context.BoardColumns.Remove(boardColumn);
+                            await _context.SaveChangesAsync();
+
+                            _logger?.LogInformation("Deleted board column {ColumnId}", columnId);
+                        }
+
+                        // Step 4: Reorder remaining columns
+                        await ReorderColumnPositionsAfterDeleteAsync(boardId, deletedPosition);
+
+                        // Commit the transaction
+                        await transaction.CommitAsync();
+
+                        _logger?.LogInformation("Successfully deleted board column {ColumnId} and reordered remaining columns", 
+                            columnId);
+
+                        return true;
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error deleting board column {ColumnId} from board {BoardId}", columnId, boardId);
+                throw new InvalidOperationException($"An error occurred while deleting board column", ex);
             }
         }
 
