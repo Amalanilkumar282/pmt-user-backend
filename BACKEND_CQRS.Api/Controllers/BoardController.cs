@@ -132,6 +132,67 @@ namespace BACKEND_CQRS.Api.Controllers
         }
 
         /// <summary>
+        /// Delete a board column
+        /// </summary>
+        /// <param name="columnId">The board column ID to delete</param>
+        /// <param name="boardId">The board ID that contains the column</param>
+        /// <param name="deletedBy">Optional: User ID who is deleting the column (for audit purposes)</param>
+        /// <returns>Deletion result with details about reordered columns</returns>
+        /// <response code="200">Board column deleted successfully</response>
+        /// <response code="400">If the column ID or board ID is invalid, or column/board doesn't exist</response>
+        /// <response code="500">If a server error occurs</response>
+        [HttpDelete("column/{columnId:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<DeleteBoardColumnResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DeleteBoardColumnResponseDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<DeleteBoardColumnResponseDto>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<DeleteBoardColumnResponseDto>>> DeleteBoardColumn(
+            [FromRoute] Guid columnId,
+            [FromQuery] int boardId,
+            [FromQuery] int? deletedBy = null)
+        {
+            try
+            {
+                // Validate input
+                if (columnId == Guid.Empty)
+                {
+                    _logger.LogWarning("Invalid column ID provided: {ColumnId}", columnId);
+                    return BadRequest(ApiResponse<DeleteBoardColumnResponseDto>.Fail(
+                        "Invalid column ID. Column ID cannot be empty."));
+                }
+
+                if (boardId <= 0)
+                {
+                    _logger.LogWarning("Invalid board ID provided: {BoardId}", boardId);
+                    return BadRequest(ApiResponse<DeleteBoardColumnResponseDto>.Fail(
+                        "Invalid board ID. Board ID must be greater than 0."));
+                }
+
+                _logger.LogInformation("API request received to delete board column {ColumnId} from board {BoardId}", 
+                    columnId, boardId);
+
+                var command = new DeleteBoardColumnCommand(columnId, boardId, deletedBy);
+                var result = await _mediator.Send(command);
+
+                if (result.Status == 200)
+                {
+                    return Ok(result);
+                }
+
+                // If status is 400, it's a business logic failure (board/column doesn't exist)
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred in BoardController.DeleteBoardColumn for column: {ColumnId}", 
+                    columnId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<DeleteBoardColumnResponseDto>.Fail(
+                        "An unexpected error occurred while deleting the board column. Please contact support if the issue persists."));
+            }
+        }
+
+        /// <summary>
         /// Delete a board (soft delete - sets IsActive to false)
         /// </summary>
         /// <param name="boardId">The board ID to delete</param>
