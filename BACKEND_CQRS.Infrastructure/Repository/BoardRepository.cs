@@ -112,6 +112,79 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             }
         }
 
+        public async Task<Board?> GetBoardByIdAsync(int boardId)
+        {
+            try
+            {
+                _logger?.LogInformation("Fetching board {BoardId}", boardId);
+
+                var board = await _context.Boards
+                    .Include(b => b.Project)
+                    .Include(b => b.Team)
+                    .Include(b => b.Creator)
+                    .Include(b => b.Updater)
+                    .FirstOrDefaultAsync(b => b.Id == boardId);
+
+                if (board != null)
+                {
+                    _logger?.LogInformation("Found board {BoardId}, IsActive: {IsActive}", boardId, board.IsActive);
+                }
+                else
+                {
+                    _logger?.LogWarning("Board {BoardId} not found", boardId);
+                }
+
+                return board;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error fetching board {BoardId}", boardId);
+                throw new InvalidOperationException($"An error occurred while fetching board", ex);
+            }
+        }
+
+        public async Task<bool> SoftDeleteBoardAsync(int boardId, int? deletedBy = null)
+        {
+            try
+            {
+                _logger?.LogInformation("Soft-deleting board {BoardId}", boardId);
+
+                var board = await _context.Boards.FindAsync(boardId);
+
+                if (board == null)
+                {
+                    _logger?.LogWarning("Board {BoardId} not found for deletion", boardId);
+                    return false;
+                }
+
+                if (!board.IsActive)
+                {
+                    _logger?.LogWarning("Board {BoardId} is already inactive", boardId);
+                    return false;
+                }
+
+                // Soft delete: set IsActive to false
+                board.IsActive = false;
+                board.UpdatedAt = DateTime.UtcNow;
+                
+                if (deletedBy.HasValue)
+                {
+                    board.UpdatedBy = deletedBy.Value;
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger?.LogInformation("Successfully soft-deleted board {BoardId}", boardId);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error soft-deleting board {BoardId}", boardId);
+                throw new InvalidOperationException($"An error occurred while deleting board", ex);
+            }
+        }
+
         public async Task<List<BoardColumn>> GetBoardColumnsAsync(int boardId)
         {
             try
