@@ -20,6 +20,8 @@ namespace BACKEND_CQRS.Application.MappingProfile
                 .ForMember(dest => dest.TeamId, opt => opt.MapFrom(src => src.TeamAssigned))
                 .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId))
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id));
+
+            CreateMap<Sprint, SprintDto>().ReverseMap();
         }
     }
 }
