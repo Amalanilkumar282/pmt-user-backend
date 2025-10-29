@@ -77,5 +77,14 @@ namespace BACKEND_CQRS.Api.Controllers
             var query = new GetIssueCountByTypeByProjectSprintQuery(projectId, sprintId);
             return await _mediator.Send(query);
         }
+
+        [HttpGet("user/{userId}")]
+        public async Task<ApiResponse<List<IssueDto>>> GetIssuesByUser([FromRoute] int userId)
+        {
+            var query = new GetIssuesByUserIdQuery(userId);
+            return await _mediator.Send(query);
+        }
+
+
     }
 }
