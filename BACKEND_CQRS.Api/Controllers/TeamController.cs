@@ -1,4 +1,5 @@
-﻿using BACKEND_CQRS.Application.Dto;
+﻿using BACKEND_CQRS.Application.Command;
+using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query.Teams;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -32,39 +33,73 @@ namespace BACKEND_CQRS.Api.Controllers
         //    return Ok(result);
         //}
 
-        // 🔹 POST: api/team
-        //[HttpPost]
-        //public async Task<ActionResult<TeamDto>> CreateTeam([FromBody] CreateTeamCommand command)
-        //{
-        //    var result = await _mediator.Send(command);
-        //    return CreatedAtAction(nameof(GetTeamById), new { id = result.Id }, result);
-        //}
+        //POST: api/team
+        [HttpPost("create")]
+        public async Task<IActionResult> CreateTeam([FromBody] CreateTeamDto dto)
+        {
+            if (dto == null)
+                return BadRequest("Invalid request data");
 
-        // 🔹 GET: api/team/{id}
-        //[HttpGet("{id:int}")]
-        //public async Task<ActionResult<TeamDto>> GetTeamById(int id)
-        //{
-        //    var result = await _mediator.Send(new GetTeamByIdQuery(id));
-        //    return result is not null ? Ok(result) : NotFound();
-        //}
+            var command = new CreateTeamCommand
+            {
+                ProjectId = dto.ProjectId,
+                Name = dto.Name,
+                Description = dto.Description,
+                LeadId = dto.LeadId,
+                MemberIds = dto.MemberIds,
+                Label = dto.Label,
+                CreatedBy = dto.CreatedBy
+            };
 
-        // 🔹 PUT: api/team/{id}
-        //[HttpPut("{id:int}")]
-        //public async Task<IActionResult> UpdateTeam(int id, [FromBody] UpdateTeamCommand command)
-        //{
-        //    if (id != command.Id)
-        //        return BadRequest("Team ID mismatch.");
+            var teamId = await _mediator.Send(command);
 
-        //    var result = await _mediator.Send(command);
-        //    return result ? NoContent() : NotFound();
-        //}
+            return Ok(new
+            {
+                success = true,
+                message = "Team created successfully",
+                team_id = teamId
+            });
+        }
+    
 
-        // 🔹 DELETE: api/team/{id}
-        //[HttpDelete("{id:int}")]
-        //public async Task<IActionResult> DeleteTeam(int id)
-        //{
-        //    var result = await _mediator.Send(new DeleteTeamCommand(id));
-        //    return result ? NoContent() : NotFound();
-        //}
+    // 🔹 GET: api/team/{id}
+    //[HttpGet("{id:int}")]
+    //public async Task<ActionResult<TeamDto>> GetTeamById(int id)
+    //{
+    //    var result = await _mediator.Send(new GetTeamByIdQuery(id));
+    //    return result is not null ? Ok(result) : NotFound();
+    //}
+
+    // 🔹 PUT: api/team/{id}
+    //[HttpPut("{id:int}")]
+    //public async Task<IActionResult> UpdateTeam(int id, [FromBody] UpdateTeamCommand command)
+    //{
+    //    if (id != command.Id)
+    //        return BadRequest("Team ID mismatch.");
+
+    //    var result = await _mediator.Send(command);
+    //    return result ? NoContent() : NotFound();
+    //}
+
+    // 🔹 DELETE: api/team/{id}
+    [HttpDelete("{teamId}")]
+        public async Task<IActionResult> DeleteTeam(int teamId)
+        {
+            var result = await _mediator.Send(new DeleteTeamCommand(teamId));
+
+            if (!result)
+                return NotFound(new { Message = "Team not found" });
+
+            return Ok(new { Message = "Team deleted successfully" });
+        }
+
+        [HttpGet("count/{projectId}")]
+        public async Task<IActionResult> GetTeamCountByProjectId(Guid projectId)
+        {
+            var count = await _mediator.Send(new GetTeamCountByProjectIdQuery(projectId));
+            return Ok(new { ProjectId = projectId, TeamCount = count });
+        }
+
     }
 }
+
