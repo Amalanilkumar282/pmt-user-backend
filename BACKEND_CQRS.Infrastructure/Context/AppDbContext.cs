@@ -24,5 +24,9 @@ namespace BACKEND_CQRS.Infrastructure.Context
 
         public DbSet<TeamMember> TeamMembers { get; set; }
 
+        public DbSet<Board> Boards { get; set; }
+        public DbSet<BoardColumn> BoardColumns { get; set; }
+        public DbSet<BoardBoardColumnMap> BoardBoardColumnMaps { get; set; }
+        public DbSet<Status> Statuses { get; set; }
     }
 }

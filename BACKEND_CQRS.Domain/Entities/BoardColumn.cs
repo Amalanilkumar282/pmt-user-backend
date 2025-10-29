@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace BACKEND_CQRS.Domain.Entities
 {
-
     [Table("board_columns")]
     public class BoardColumn
     {
@@ -17,10 +16,10 @@ namespace BACKEND_CQRS.Domain.Entities
         public Guid Id { get; set; }
 
         [Column("status_id")]
-        public Guid? StatusId { get; set; }
+        public int? StatusId { get; set; }
 
-        [Column("board_name")]
-        public string? BoardName { get; set; }
+        [Column("board_column_name")]
+        public string? BoardColumnName { get; set; }
 
         [Column("board_color")]
         public string? BoardColor { get; set; }
@@ -32,5 +31,4 @@ namespace BACKEND_CQRS.Domain.Entities
         [ForeignKey("StatusId")]
         public Status? Status { get; set; }
     }
-
 }

@@ -13,13 +13,14 @@ namespace BACKEND_CQRS.Domain.Entities
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
+        [Required]
         [Column("status_name")]
-        public string? StatusName { get; set; }
+        public string StatusName { get; set; }
 
         // Navigation properties
         public ICollection<BoardColumn> BoardColumns { get; set; }
     }
-
 }
