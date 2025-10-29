@@ -40,5 +40,19 @@ namespace BACKEND_CQRS.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet("team/{teamId}")]
+        public async Task<IActionResult> GetSprintsByTeamId(int teamId)
+        {
+            var query = new GetSprintsByTeamIdQuery(teamId);
+            var result = await _mediator.Send(query);
+
+            if (result.Status != 200)
+            {
+                return NotFound(result);
+            }
+
+            return Ok(result);
+        }
     }
 }
