@@ -26,7 +26,12 @@ namespace BACKEND_CQRS.Api.Controllers
             return newIssue;
         }
 
-
+        [HttpPut]
+        public async Task<ApiResponse<Guid>> EditIssue([FromBody] EditIssueCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result;
+        }
 
         [HttpGet("project/{projectId}/issues")]
         public async Task<ApiResponse<List<IssueDto>>> GetIssuesByProject(
