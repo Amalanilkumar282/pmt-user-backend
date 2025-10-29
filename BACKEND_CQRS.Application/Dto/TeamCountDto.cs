@@ -10,5 +10,6 @@ namespace BACKEND_CQRS.Application.Dto
     {
         public int TotalTeams { get; set; }
         public int ActiveTeams { get; set; }
+        public int AssignedMembersCount { get; set; }
     }
 }
