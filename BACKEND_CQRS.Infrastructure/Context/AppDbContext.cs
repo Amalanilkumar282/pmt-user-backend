@@ -20,6 +20,7 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<Teams> Teams { get; set; }
         public DbSet<Label> Labels { get; set; }
         public DbSet<Channel> Channels { get; set; }
+        public DbSet<Message> Messages { get; set; }
         public DbSet<ActivityLog> ActivityLogs { get; set; }
 
         public DbSet<TeamMember> TeamMembers { get; set; }
