@@ -21,6 +21,94 @@ namespace BACKEND_CQRS.Api.Controllers
         }
 
         /// <summary>
+        /// Create a new board in a project
+        /// </summary>
+        /// <param name="command">The board creation details</param>
+        /// <returns>Created board details</returns>
+        /// <response code="201">Board created successfully</response>
+        /// <response code="400">If the input is invalid, project doesn't exist, team doesn't exist, or validation fails</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request for team-based board:
+        /// 
+        ///     POST /api/board
+        ///     {
+        ///        "projectId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///        "name": "Development Team Board",
+        ///        "description": "Board for development team sprint planning",
+        ///        "type": "team",
+        ///        "teamId": 1,
+        ///        "createdBy": 5
+        ///     }
+        ///     
+        /// Sample request for custom board:
+        /// 
+        ///     POST /api/board
+        ///     {
+        ///        "projectId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///        "name": "Custom Workflow Board",
+        ///        "description": "Custom board for specific workflow",
+        ///        "type": "custom",
+        ///        "createdBy": 5
+        ///     }
+        /// </remarks>
+        [HttpPost]
+        [ProducesResponseType(typeof(ApiResponse<CreateBoardResponseDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<CreateBoardResponseDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<CreateBoardResponseDto>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<CreateBoardResponseDto>>> CreateBoard(
+            [FromBody] CreateBoardCommand command)
+        {
+            try
+            {
+                // Validate ModelState
+                if (!ModelState.IsValid)
+                {
+                    var errors = string.Join("; ", ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage));
+                    
+                    _logger.LogWarning("Invalid model state for CreateBoard: {Errors}", errors);
+                    return BadRequest(ApiResponse<CreateBoardResponseDto>.Fail($"Validation failed: {errors}"));
+                }
+
+                // Additional validation: ProjectId cannot be empty
+                if (command.ProjectId == Guid.Empty)
+                {
+                    _logger.LogWarning("Empty project ID provided in CreateBoard request");
+                    return BadRequest(ApiResponse<CreateBoardResponseDto>.Fail(
+                        "Invalid project ID. Project ID cannot be empty."));
+                }
+
+                _logger.LogInformation(
+                    "API request received to create board '{Name}' in project {ProjectId}, Type: {Type}, TeamId: {TeamId}",
+                    command.Name, command.ProjectId, command.Type, command.TeamId);
+
+                var result = await _mediator.Send(command);
+
+                if (result.Status == 201)
+                {
+                    return CreatedAtAction(
+                        nameof(GetBoardsByProjectId),
+                        new { projectId = result.Data?.ProjectId },
+                        result);
+                }
+
+                // If status is 400, it's a business logic failure
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred in BoardController.CreateBoard for project: {ProjectId}", 
+                    command?.ProjectId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<CreateBoardResponseDto>.Fail(
+                        "An unexpected error occurred while creating the board. Please contact support if the issue persists."));
+            }
+        }
+
+        /// <summary>
         /// Get all active boards by project ID with their columns
         /// </summary>
         /// <param name="projectId">The project ID (GUID)</param>
