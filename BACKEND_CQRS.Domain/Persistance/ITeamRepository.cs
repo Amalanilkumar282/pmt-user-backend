@@ -1,9 +1,4 @@
 ﻿using BACKEND_CQRS.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BACKEND_CQRS.Domain.Persistance
 {
@@ -32,7 +27,10 @@ namespace BACKEND_CQRS.Domain.Persistance
         Task<bool> DeleteTeamAsync(int teamId);
 
 
-        Task<int> GetTeamCountByProjectIdAsync(Guid projectId);
+        //Task<int> GetTeamCountByProjectIdAsync(Guid projectId);
+
+         
+
 
 
     }
