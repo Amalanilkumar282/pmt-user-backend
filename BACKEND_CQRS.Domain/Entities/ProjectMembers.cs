@@ -27,8 +27,7 @@ namespace BACKEND_CQRS.Domain.Entities
             [Column("role_id")]
             public int? RoleId { get; set; }
 
-            [Column("project_role")]
-            public string? ProjectRole { get; set; }
+            
 
             [Column("is_owner")]
             public bool? IsOwner { get; set; }
