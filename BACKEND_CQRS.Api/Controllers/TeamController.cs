@@ -92,13 +92,16 @@ namespace BACKEND_CQRS.Api.Controllers
 
             return Ok(new { Message = "Team deleted successfully" });
         }
-
         [HttpGet("count/{projectId}")]
         public async Task<IActionResult> GetTeamCountByProjectId(Guid projectId)
         {
-            var count = await _mediator.Send(new GetTeamCountByProjectIdQuery(projectId));
-            return Ok(new { ProjectId = projectId, TeamCount = count });
+            var query = new GetTeamCountByProjectIdQuery(projectId);
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
+
+
+
 
     }
 }

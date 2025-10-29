@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+ 
 
 namespace BACKEND_CQRS.Infrastructure.Repository
 {
@@ -96,12 +97,14 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             await _context.SaveChangesAsync();
             return true;
         }
-        public async Task<int> GetTeamCountByProjectIdAsync(Guid projectId)
-        {
-            return await _context.Teams
-                .CountAsync(t => t.ProjectId == projectId );
-        }
+        //public async Task<int> GetTeamCountByProjectIdAsync(Guid projectId)
+        //{
+        //    return await _context.Teams
+        //        .CountAsync(t => t.ProjectId == projectId );
+        //}
 
+
+        
 
     }
 }
