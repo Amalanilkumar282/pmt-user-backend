@@ -1,5 +1,6 @@
 ﻿using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query;
+using BACKEND_CQRS.Application.Query.User;
 using BACKEND_CQRS.Application.Query.Users;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
@@ -29,6 +30,15 @@ namespace BACKEND_CQRS.Api.Controllers
 
 
             return Ok(result);
+        }
+
+        [HttpGet("{userId}/activities")]
+        public async Task<ApiResponse<List<ActivityLogDto>>> GetUserActivities(
+            [FromRoute] int userId,
+            [FromQuery] int take = 50)
+        {
+            var query = new GetUserActivitiesQuery(userId, take);
+            return await _mediator.Send(query);
         }
     }
 }
