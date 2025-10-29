@@ -130,5 +130,52 @@ namespace BACKEND_CQRS.Api.Controllers
                         "An unexpected error occurred while creating board column. Please contact support if the issue persists."));
             }
         }
+
+        /// <summary>
+        /// Delete a board (soft delete - sets IsActive to false)
+        /// </summary>
+        /// <param name="boardId">The board ID to delete</param>
+        /// <param name="deletedBy">Optional: User ID who is deleting the board</param>
+        /// <returns>Success status</returns>
+        /// <response code="200">Board deleted successfully</response>
+        /// <response code="400">If the board doesn't exist or is already deleted</response>
+        /// <response code="500">If a server error occurs</response>
+        [HttpDelete("{boardId:int}")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteBoard(
+            [FromRoute] int boardId,
+            [FromQuery] int? deletedBy = null)
+        {
+            try
+            {
+                if (boardId <= 0)
+                {
+                    _logger.LogWarning("Invalid board ID provided: {BoardId}", boardId);
+                    return BadRequest(ApiResponse<bool>.Fail("Invalid board ID. Board ID must be greater than 0."));
+                }
+
+                _logger.LogInformation("API request received to delete board: {BoardId}", boardId);
+
+                var command = new DeleteBoardCommand(boardId, deletedBy);
+                var result = await _mediator.Send(command);
+
+                if (result.Status == 200)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred in BoardController.DeleteBoard for board: {BoardId}", boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<bool>.Fail(
+                        "An unexpected error occurred while deleting the board. Please contact support if the issue persists."));
+            }
+        }
     }
 }
