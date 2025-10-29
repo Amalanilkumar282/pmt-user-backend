@@ -173,44 +173,57 @@ namespace BACKEND_CQRS.Infrastructure.Repository
 
         public async Task<BoardColumn> CreateBoardColumnAsync(int boardId, BoardColumn boardColumn)
         {
-            // Use a transaction to ensure atomicity
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
             try
             {
                 _logger?.LogInformation("Creating board column for board {BoardId} at position {Position}", 
                     boardId, boardColumn.Position);
 
-                // Step 1: Add the BoardColumn
-                await _context.BoardColumns.AddAsync(boardColumn);
-                await _context.SaveChangesAsync();
-
-                _logger?.LogInformation("Created board column with ID {ColumnId}", boardColumn.Id);
-
-                // Step 2: Create the mapping between board and column
-                var mapping = new BoardBoardColumnMap
+                // Use the execution strategy to handle retries with transactions
+                var strategy = _context.Database.CreateExecutionStrategy();
+                
+                return await strategy.ExecuteAsync(async () =>
                 {
-                    BoardId = boardId,
-                    BoardColumnId = boardColumn.Id,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
+                    // Use a transaction to ensure atomicity
+                    using var transaction = await _context.Database.BeginTransactionAsync();
 
-                await _context.BoardBoardColumnMaps.AddAsync(mapping);
-                await _context.SaveChangesAsync();
+                    try
+                    {
+                        // Step 1: Add the BoardColumn
+                        await _context.BoardColumns.AddAsync(boardColumn);
+                        await _context.SaveChangesAsync();
 
-                _logger?.LogInformation("Created board-column mapping with ID {MappingId}", mapping.Id);
+                        _logger?.LogInformation("Created board column with ID {ColumnId}", boardColumn.Id);
 
-                // Commit the transaction
-                await transaction.CommitAsync();
+                        // Step 2: Create the mapping between board and column
+                        var mapping = new BoardBoardColumnMap
+                        {
+                            BoardId = boardId,
+                            BoardColumnId = boardColumn.Id,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
 
-                _logger?.LogInformation("Successfully created board column and mapping");
+                        await _context.BoardBoardColumnMaps.AddAsync(mapping);
+                        await _context.SaveChangesAsync();
 
-                return boardColumn;
+                        _logger?.LogInformation("Created board-column mapping with ID {MappingId}", mapping.Id);
+
+                        // Commit the transaction
+                        await transaction.CommitAsync();
+
+                        _logger?.LogInformation("Successfully created board column and mapping");
+
+                        return boardColumn;
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
+                });
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 _logger?.LogError(ex, "Error creating board column for board {BoardId}. Transaction rolled back.", boardId);
                 throw new InvalidOperationException($"An error occurred while creating board column", ex);
             }

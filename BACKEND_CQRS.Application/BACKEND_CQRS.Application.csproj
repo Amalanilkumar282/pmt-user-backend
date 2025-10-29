@@ -16,5 +16,9 @@
     <ProjectReference Include="..\BACKEND_CQRS.Domain\BACKEND_CQRS.Domain.csproj" />
     <ProjectReference Include="..\BACKEND_CQRS.Infrastructure\BACKEND_CQRS.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Handler\Status\" />
+    <Folder Include="Query\Status\" />
+  </ItemGroup>
 
 </Project>

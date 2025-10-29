@@ -1,6 +1,7 @@
 ﻿using BACKEND_CQRS.Domain.Persistance;
 using BACKEND_CQRS.Infrastructure.Context;
 using BACKEND_CQRS.Infrastructure.Repository;
+using BACKEND_CQRS.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,14 +15,14 @@ namespace BACKEND_CQRS.Infrastructure
         {
             // Add PostgreSQL / Supabase connection
             services.AddDbContext<AppDbContext>(options =>
-     options.UseNpgsql(
-         configuration.GetConnectionString("DefaultConnection"),
-         npgsqlOptions =>
-         {
-             npgsqlOptions.EnableRetryOnFailure(); // keep automatic retry
-         }
-     )
- );
+                options.UseNpgsql(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    npgsqlOptions =>
+                    {
+                        npgsqlOptions.EnableRetryOnFailure(); // keep automatic retry
+                    }
+                )
+            );
 
 
             // Repositories
@@ -31,9 +32,12 @@ namespace BACKEND_CQRS.Infrastructure
             services.AddScoped<ILabelRepository, LabelRepository>();
             services.AddScoped<IBoardRepository, BoardRepository>();
             services.AddScoped<IStatusRepository, StatusRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IIssueRepository, IssueRepository>();
             //services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 
-            //// Services
+            // Services
+            services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
             //services.AddScoped<IAuthService, AuthService>();
 
             // Logging
