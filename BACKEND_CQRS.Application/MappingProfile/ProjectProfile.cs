@@ -8,8 +8,17 @@ namespace BACKEND_CQRS.Application.MappingProfile
     {
         public ProjectProfile()
         {
-            // Mapping from entity to DTO
-            CreateMap<Projects, ProjectDto>();
+            // Entity -> DTO
+            CreateMap<Projects, ProjectDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+                .ForMember(dest => dest.CustomerOrgName, opt => opt.MapFrom(src => src.CustomerOrgName))
+                .ForMember(dest => dest.CustomerDomainUrl, opt => opt.MapFrom(src => src.CustomerDomainUrl))
+                .ForMember(dest => dest.CustomerDescription, opt => opt.MapFrom(src => src.CustomerDescription))
+                .ForMember(dest => dest.PocEmail, opt => opt.MapFrom(src => src.PocEmail))
+                .ForMember(dest => dest.PocPhone, opt => opt.MapFrom(src => src.PocPhone))
+                .ReverseMap();
         }
     }
 }

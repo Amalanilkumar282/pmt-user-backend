@@ -1,4 +1,5 @@
-﻿using BACKEND_CQRS.Application.Dto;
+﻿using BACKEND_CQRS.Application.Command;
+using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query;
 using BACKEND_CQRS.Application.Query.Messages;
 using BACKEND_CQRS.Application.Wrapper;
@@ -33,6 +34,13 @@ namespace BACKEND_CQRS.Api.Controllers
         {
             var query = new GetMessagesByChannelIdQuery(channelId, take);
             return await _mediator.Send(query);
+        }
+
+        [HttpPost]
+        public async Task<ApiResponse<ChannelDto>> CreateChannel([FromBody] CreateChannelCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result;
         }
     }
 }

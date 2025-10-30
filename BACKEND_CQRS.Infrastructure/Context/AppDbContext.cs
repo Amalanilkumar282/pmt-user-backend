@@ -17,7 +17,6 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<Issue> Issues { get; set; }
         public DbSet<Sprint> Sprints { get; set; }
         public DbSet<Teams> Teams { get; set; }
-        public DbSet<Role> Roles { get; set; }
         public DbSet<Label> Labels { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<Message> Messages { get; set; }
@@ -27,5 +26,8 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<BoardColumn> BoardColumns { get; set; }
         public DbSet<BoardBoardColumnMap> BoardBoardColumnMaps { get; set; }
         public DbSet<Status> Statuses { get; set; }
+
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; } // ✅ Added RefreshToken
     }
 }
