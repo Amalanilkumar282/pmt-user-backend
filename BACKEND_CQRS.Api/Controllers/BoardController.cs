@@ -281,6 +281,116 @@ namespace BACKEND_CQRS.Api.Controllers
         }
 
         /// <summary>
+        /// Update a board column's properties (name, color, position, or status)
+        /// </summary>
+        /// <param name="columnId">The board column ID to update</param>
+        /// <param name="command">The update details</param>
+        /// <returns>Updated board column details</returns>
+        /// <response code="200">Board column updated successfully</response>
+        /// <response code="400">If the input is invalid or column/board doesn't exist</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request to change position from 8 to 3 (will automatically shift columns 3-7 to 4-8):
+        /// 
+        ///     PUT /api/board/column/3fa85f64-5717-4562-b3fc-2c963f66afa6
+        ///     {
+        ///        "boardId": 1,
+        ///        "position": 3
+        ///     }
+        ///     
+        /// Sample request to update color and name:
+        /// 
+        ///     PUT /api/board/column/3fa85f64-5717-4562-b3fc-2c963f66afa6
+        ///     {
+        ///        "boardId": 1,
+        ///        "boardColumnName": "In Progress",
+        ///        "boardColor": "#FF5733"
+        ///     }
+        ///     
+        /// Sample request to change status:
+        /// 
+        ///     PUT /api/board/column/3fa85f64-5717-4562-b3fc-2c963f66afa6
+        ///     {
+        ///        "boardId": 1,
+        ///        "statusName": "Completed"
+        ///     }
+        /// </remarks>
+        [HttpPut("column/{columnId:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardColumnResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardColumnResponseDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardColumnResponseDto>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<UpdateBoardColumnResponseDto>>> UpdateBoardColumn(
+            [FromRoute] Guid columnId,
+            [FromBody] UpdateBoardColumnCommand command)
+        {
+            try
+            {
+                // Validate input
+                if (columnId == Guid.Empty)
+                {
+                    _logger.LogWarning("Invalid column ID provided: {ColumnId}", columnId);
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail(
+                        "Invalid column ID. Column ID cannot be empty."));
+                }
+
+                // Set the columnId from the route parameter
+                command.ColumnId = columnId;
+
+                // Manual validation after setting columnId
+                // Check required fields
+                if (command.BoardId <= 0)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("BoardId is required and must be greater than 0"));
+                }
+
+                // Validate optional fields if provided
+                if (!string.IsNullOrWhiteSpace(command.BoardColumnName) && command.BoardColumnName.Length > 100)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("BoardColumnName cannot exceed 100 characters"));
+                }
+
+                if (!string.IsNullOrWhiteSpace(command.BoardColor) && !System.Text.RegularExpressions.Regex.IsMatch(command.BoardColor, @"^#[0-9A-Fa-f]{6}$"))
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("BoardColor must be in hex format (e.g., #FF5733)"));
+                }
+
+                if (command.Position.HasValue && command.Position.Value < 1)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("Position must be greater than 0"));
+                }
+
+                if (!string.IsNullOrWhiteSpace(command.StatusName) && command.StatusName.Length > 100)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("StatusName cannot exceed 100 characters"));
+                }
+
+                _logger.LogInformation(
+                    "API request received to update board column {ColumnId} for board {BoardId}",
+                    columnId, command.BoardId);
+
+                var result = await _mediator.Send(command);
+
+                if (result.Status == 200)
+                {
+                    return Ok(result);
+                }
+
+                // If status is 400, it's a business logic failure
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, 
+                    "Unexpected error occurred in BoardController.UpdateBoardColumn for column: {ColumnId}",
+                    columnId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<UpdateBoardColumnResponseDto>.Fail(
+                        "An unexpected error occurred while updating the board column. Please contact support if the issue persists."));
+            }
+        }
+
+        /// <summary>
         /// Delete a board (soft delete - sets IsActive to false)
         /// </summary>
         /// <param name="boardId">The board ID to delete</param>
