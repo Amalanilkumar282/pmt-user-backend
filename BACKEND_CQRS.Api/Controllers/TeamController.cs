@@ -101,6 +101,17 @@ namespace BACKEND_CQRS.Api.Controllers
         }
 
 
+        [HttpGet("teams/{teamId}/details")]
+        public async Task<IActionResult> GetTeamDetailsByTeamId(int teamId)
+        {
+            var result = await _mediator.Send(new GetTeamDetailsByTeamIdQuery(teamId));
+
+            if (result == null)
+                return NotFound($"Team with ID {teamId} not found.");
+
+            return Ok(result);
+        }
+
 
 
     }

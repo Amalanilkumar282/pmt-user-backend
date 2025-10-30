@@ -40,5 +40,14 @@ namespace BACKEND_CQRS.Api.Controllers
             var query = new GetUserActivitiesQuery(userId, take);
             return await _mediator.Send(query);
         }
+
+        // New endpoint to get all users by project id
+        [HttpGet("by-project/{projectId}")]
+        public async Task<ActionResult<ApiResponse<List<UserDto>>>> GetUsersByProjectId([FromRoute] Guid projectId)
+        {
+            var query = new GetUsersByProjectIdQuery(projectId);
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
     }
 }
