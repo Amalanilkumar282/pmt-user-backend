@@ -67,6 +67,9 @@ namespace BACKEND_CQRS.Domain.Entities
 
         [NotMapped]
         public int ActiveSprintCount { get; set; }
+
+         //✅ Add this navigation property
+        public ICollection<TeamMember> TeamMembers { get; set; } = new List<TeamMember>();
     }
 }
 

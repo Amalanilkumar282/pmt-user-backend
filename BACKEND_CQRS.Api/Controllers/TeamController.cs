@@ -100,20 +100,28 @@ namespace BACKEND_CQRS.Api.Controllers
             return Ok(result);
         }
 
-
-        [HttpGet("teams/{teamId}/details")]
-        public async Task<IActionResult> GetTeamDetailsByTeamId(int teamId)
+        [HttpGet("project/{projectId}/details")]
+        public async Task<IActionResult> GetTeamDetailsByProjectId(Guid projectId)
         {
-            var result = await _mediator.Send(new GetTeamDetailsByTeamIdQuery(teamId));
-
-            if (result == null)
-                return NotFound($"Team with ID {teamId} not found.");
-
+            var result = await _mediator.Send(new GetTeamsByProjectIdQuery(projectId));
             return Ok(result);
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateTeam(int id, [FromBody] UpdateTeamDto updateDto)
+        {
+            if (updateDto == null)
+                return BadRequest(new { message = "Invalid request data." });
 
+            var result = await _mediator.Send(new UpdateTeamCommand(id, updateDto));
 
+            if (!result)
+                return NotFound(new { message = "Team not found." });
+
+            return Ok(new { message = "Team updated successfully." });
+        }
     }
+
+
 }
 

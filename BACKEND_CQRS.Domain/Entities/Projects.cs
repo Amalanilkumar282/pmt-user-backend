@@ -82,5 +82,5 @@ namespace BACKEND_CQRS.Domain.Entities
         [ForeignKey("ProjectManagerRoleId")]
         public Role ProjectManagerRole { get; set; }
     }
-}
+
 
