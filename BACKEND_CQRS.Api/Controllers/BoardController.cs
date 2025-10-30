@@ -438,5 +438,135 @@ namespace BACKEND_CQRS.Api.Controllers
                         "An unexpected error occurred while deleting the board. Please contact support if the issue persists."));
             }
         }
+
+        /// <summary>
+        /// Update a board's properties (name, description, type, team association, status, or metadata)
+        /// </summary>
+        /// <param name="boardId">The board ID to update</param>
+        /// <param name="command">The update details</param>
+        /// <returns>Updated board details</returns>
+        /// <response code="200">Board updated successfully</response>
+        /// <response code="400">If the input is invalid or board doesn't exist</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request to update board name and description:
+        /// 
+        ///     PUT /api/board/1
+        ///     {
+        ///        "name": "Updated Board Name",
+        ///        "description": "Updated description"
+        ///     }
+        ///     
+        /// Sample request to change board type and add team:
+        /// 
+        ///     PUT /api/board/1
+        ///     {
+        ///        "type": "team",
+        ///        "teamId": 5
+        ///     }
+        ///     
+        /// Sample request to remove team association:
+        /// 
+        ///     PUT /api/board/1
+        ///     {
+        ///        "removeTeamAssociation": true,
+        ///        "type": "custom"
+        ///     }
+        ///     
+        /// Sample request to deactivate a board:
+        /// 
+        ///     PUT /api/board/1
+        ///     {
+        ///        "isActive": false,
+        ///        "updatedBy": 123
+        ///     }
+        /// </remarks>
+        [HttpPut("{boardId:int}")]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardResponseDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardResponseDto>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<UpdateBoardResponseDto>>> UpdateBoard(
+            [FromRoute] int boardId,
+            [FromBody] UpdateBoardCommand command)
+        {
+            try
+            {
+                // Validate input
+                if (boardId <= 0)
+                {
+                    _logger.LogWarning("Invalid board ID provided: {BoardId}", boardId);
+                    return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                        "Invalid board ID. Board ID must be greater than 0."));
+                }
+
+                // Set the boardId from the route parameter
+                command.BoardId = boardId;
+
+                // Manual validation after setting boardId
+                // Validate name if provided
+                if (!string.IsNullOrWhiteSpace(command.Name))
+                {
+                    if (command.Name.Length > 150)
+                    {
+                        return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                            "Board name cannot exceed 150 characters"));
+                    }
+                    if (command.Name.Trim().Length == 0)
+                    {
+                        return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                            "Board name cannot be empty or whitespace"));
+                    }
+                }
+
+                // Validate description if provided
+                if (command.Description != null && command.Description.Length > 1000)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                        "Description cannot exceed 1000 characters"));
+                }
+
+                // Validate type if provided
+                if (!string.IsNullOrWhiteSpace(command.Type))
+                {
+                    var validTypes = new[] { "kanban", "scrum", "team", "custom" };
+                    if (!validTypes.Contains(command.Type.ToLower()))
+                    {
+                        return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                            "Type must be one of: kanban, scrum, team, custom"));
+                    }
+                }
+
+                // Validate teamId if provided
+                if (command.TeamId.HasValue && command.TeamId.Value < 0)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                        "TeamId must be a positive number (use 0 or removeTeamAssociation to remove team)"));
+                }
+
+                _logger.LogInformation(
+                    "API request received to update board {BoardId}",
+                    boardId);
+
+                var result = await _mediator.Send(command);
+
+                if (result.Status == 200)
+                {
+                    return Ok(result);
+                }
+
+                // If status is 400, it's a business logic failure
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, 
+                    "Unexpected error occurred in BoardController.UpdateBoard for board: {BoardId}",
+                    boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<UpdateBoardResponseDto>.Fail(
+                        "An unexpected error occurred while updating the board. Please contact support if the issue persists."));
+            }
+        }
     }
 }

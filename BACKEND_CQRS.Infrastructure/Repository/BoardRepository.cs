@@ -185,6 +185,110 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             }
         }
 
+        public async Task<Board> UpdateBoardAsync(int boardId, Board updatedBoard)
+        {
+            try
+            {
+                _logger?.LogInformation("Updating board {BoardId}", boardId);
+
+                var existingBoard = await _context.Boards
+                    .Include(b => b.Project)
+                    .Include(b => b.Team)
+                    .Include(b => b.Creator)
+                    .Include(b => b.Updater)
+                    .FirstOrDefaultAsync(b => b.Id == boardId);
+
+                if (existingBoard == null)
+                {
+                    _logger?.LogWarning("Board {BoardId} not found for update", boardId);
+                    throw new KeyNotFoundException($"Board with ID {boardId} not found");
+                }
+
+                // Update only the properties that are provided (not null)
+                bool hasChanges = false;
+
+                if (!string.IsNullOrWhiteSpace(updatedBoard.Name) && 
+                    updatedBoard.Name != existingBoard.Name)
+                {
+                    existingBoard.Name = updatedBoard.Name.Trim();
+                    hasChanges = true;
+                }
+
+                if (updatedBoard.Description != null && 
+                    updatedBoard.Description != existingBoard.Description)
+                {
+                    existingBoard.Description = string.IsNullOrWhiteSpace(updatedBoard.Description) 
+                        ? null 
+                        : updatedBoard.Description.Trim();
+                    hasChanges = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(updatedBoard.Type) && 
+                    updatedBoard.Type != existingBoard.Type)
+                {
+                    existingBoard.Type = updatedBoard.Type.ToLower();
+                    hasChanges = true;
+                }
+
+                // Handle TeamId update (including removal)
+                if (updatedBoard.TeamId != existingBoard.TeamId)
+                {
+                    existingBoard.TeamId = updatedBoard.TeamId;
+                    hasChanges = true;
+                }
+
+                // Handle IsActive update
+                if (updatedBoard.IsActive != existingBoard.IsActive)
+                {
+                    existingBoard.IsActive = updatedBoard.IsActive;
+                    hasChanges = true;
+                }
+
+                // Handle Metadata update
+                if (updatedBoard.Metadata != existingBoard.Metadata)
+                {
+                    existingBoard.Metadata = string.IsNullOrWhiteSpace(updatedBoard.Metadata) 
+                        ? null 
+                        : updatedBoard.Metadata;
+                    hasChanges = true;
+                }
+
+                if (hasChanges)
+                {
+                    existingBoard.UpdatedAt = DateTime.UtcNow;
+                    
+                    if (updatedBoard.UpdatedBy.HasValue)
+                    {
+                        existingBoard.UpdatedBy = updatedBoard.UpdatedBy.Value;
+                    }
+
+                    await _context.SaveChangesAsync();
+
+                    _logger?.LogInformation("Successfully updated board {BoardId}", boardId);
+
+                    // Reload navigation properties
+                    await _context.Entry(existingBoard).Reference(b => b.Project).LoadAsync();
+                    await _context.Entry(existingBoard).Reference(b => b.Team).LoadAsync();
+                    await _context.Entry(existingBoard).Reference(b => b.Updater).LoadAsync();
+                }
+                else
+                {
+                    _logger?.LogInformation("No changes detected for board {BoardId}", boardId);
+                }
+
+                return existingBoard;
+            }
+            catch (KeyNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error updating board {BoardId}", boardId);
+                throw new InvalidOperationException($"An error occurred while updating board", ex);
+            }
+        }
+
         public async Task<List<BoardColumn>> GetBoardColumnsAsync(int boardId)
         {
             try
