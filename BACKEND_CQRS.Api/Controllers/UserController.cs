@@ -4,6 +4,7 @@ using BACKEND_CQRS.Application.Query.User;
 using BACKEND_CQRS.Application.Query.Users;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ namespace BACKEND_CQRS.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class UserController : ControllerBase
     {
         private readonly IMediator _mediator;
