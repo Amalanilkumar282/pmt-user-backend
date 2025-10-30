@@ -433,5 +433,116 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                 throw new InvalidOperationException($"An error occurred while creating board column", ex);
             }
         }
+
+        public async Task<BoardColumn> UpdateBoardColumnAsync(Guid columnId, BoardColumn updatedColumn)
+        {
+            try
+            {
+                _logger?.LogInformation("Updating board column {ColumnId}", columnId);
+
+                var existingColumn = await _context.BoardColumns
+                    .Include(bc => bc.Status)
+                    .FirstOrDefaultAsync(bc => bc.Id == columnId);
+
+                if (existingColumn == null)
+                {
+                    _logger?.LogWarning("Board column {ColumnId} not found for update", columnId);
+                    throw new KeyNotFoundException($"Board column with ID {columnId} not found");
+                }
+
+                // Update only the properties that are provided (not null)
+                if (!string.IsNullOrWhiteSpace(updatedColumn.BoardColumnName))
+                {
+                    existingColumn.BoardColumnName = updatedColumn.BoardColumnName.Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(updatedColumn.BoardColor))
+                {
+                    existingColumn.BoardColor = updatedColumn.BoardColor.ToUpper();
+                }
+
+                if (updatedColumn.Position.HasValue)
+                {
+                    existingColumn.Position = updatedColumn.Position.Value;
+                }
+
+                if (updatedColumn.StatusId.HasValue)
+                {
+                    existingColumn.StatusId = updatedColumn.StatusId.Value;
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger?.LogInformation("Successfully updated board column {ColumnId}", columnId);
+
+                // Reload to get the updated status navigation property
+                await _context.Entry(existingColumn).Reference(bc => bc.Status).LoadAsync();
+
+                return existingColumn;
+            }
+            catch (KeyNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error updating board column {ColumnId}", columnId);
+                throw new InvalidOperationException($"An error occurred while updating board column", ex);
+            }
+        }
+
+        public async Task ShiftColumnPositionsForMoveAsync(int boardId, int oldPosition, int newPosition)
+        {
+            try
+            {
+                _logger?.LogInformation(
+                    "Shifting column positions for board {BoardId} from position {OldPosition} to {NewPosition}",
+                    boardId, oldPosition, newPosition);
+
+                if (oldPosition == newPosition)
+                {
+                    // No shift needed
+                    return;
+                }
+
+                // Get all columns for this board except the one being moved
+                var columnsToShift = await _context.BoardBoardColumnMaps
+                    .Where(m => m.BoardId == boardId)
+                    .Include(m => m.BoardColumn)
+                    .Select(m => m.BoardColumn!)
+                    .Where(bc => bc != null)
+                    .ToListAsync();
+
+                if (oldPosition < newPosition)
+                {
+                    // Moving down: shift columns between oldPosition and newPosition down by 1
+                    // Example: moving from position 3 to 8
+                    // Columns at positions 4,5,6,7,8 should move to 3,4,5,6,7
+                    foreach (var column in columnsToShift.Where(c => c.Position > oldPosition && c.Position <= newPosition))
+                    {
+                        column.Position = (column.Position ?? 0) - 1;
+                    }
+                }
+                else
+                {
+                    // Moving up: shift columns between newPosition and oldPosition up by 1
+                    // Example: moving from position 8 to 3
+                    // Columns at positions 3,4,5,6,7 should move to 4,5,6,7,8
+                    foreach (var column in columnsToShift.Where(c => c.Position >= newPosition && c.Position < oldPosition))
+                    {
+                        column.Position = (column.Position ?? 0) + 1;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger?.LogInformation("Successfully shifted columns for board {BoardId}", boardId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error shifting column positions for board {BoardId}", boardId);
+                throw new InvalidOperationException($"An error occurred while shifting column positions", ex);
+            }
+        }
     }
 }

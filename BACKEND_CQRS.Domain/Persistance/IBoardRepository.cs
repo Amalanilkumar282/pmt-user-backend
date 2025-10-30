@@ -53,5 +53,15 @@ namespace BACKEND_CQRS.Domain.Persistance
         /// Soft-delete a board by setting IsActive to false
         /// </summary>
         Task<bool> SoftDeleteBoardAsync(int boardId, int? deletedBy = null);
+
+        /// <summary>
+        /// Update a board column's properties
+        /// </summary>
+        Task<BoardColumn> UpdateBoardColumnAsync(Guid columnId, BoardColumn updatedColumn);
+
+        /// <summary>
+        /// Shift column positions when moving a column from one position to another
+        /// </summary>
+        Task ShiftColumnPositionsForMoveAsync(int boardId, int oldPosition, int newPosition);
     }
 }
