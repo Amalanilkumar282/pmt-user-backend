@@ -1,6 +1,7 @@
 using BACKEND_CQRS.Application.Command;
 using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query;
+using BACKEND_CQRS.Application.Query.Boards;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -166,6 +167,73 @@ namespace BACKEND_CQRS.Api.Controllers
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     ApiResponse<object>.Fail("An unexpected error occurred while fetching boards. Please contact support if the issue persists."));
+            }
+        }
+
+        /// <summary>
+        /// Get all board columns by board ID
+        /// </summary>
+        /// <param name="boardId">The board ID</param>
+        /// <returns>List of board columns ordered by position</returns>
+        /// <response code="200">Returns the list of board columns (may be empty if no columns exist)</response>
+        /// <response code="400">If the board ID is invalid</response>
+        /// <response code="404">If the board does not exist or is inactive</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET /api/board/1/columns
+        /// 
+        /// This endpoint returns all columns for the specified board, ordered by their position.
+        /// Columns include their ID, name, color, position, and associated status information.
+        /// </remarks>
+        [HttpGet("{boardId:int}/columns")]
+        [ProducesResponseType(typeof(ApiResponse<List<BoardColumnDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<BoardColumnDto>>>> GetBoardColumnsByBoardId(int boardId)
+        {
+            try
+            {
+                // Validate input
+                if (boardId <= 0)
+                {
+                    _logger.LogWarning("Invalid board ID provided: {BoardId}", boardId);
+                    return BadRequest(ApiResponse<object>.Fail("Invalid board ID. Board ID must be greater than 0."));
+                }
+
+                _logger.LogInformation("API request received to fetch columns for board: {BoardId}", boardId);
+
+                var result = await _mediator.Send(new GetBoardColumnsByBoardIdQuery(boardId));
+
+                var message = result.Count > 0
+                    ? $"Successfully fetched {result.Count} column(s) for board {boardId}"
+                    : $"No columns found for board {boardId}";
+
+                return Ok(ApiResponse<List<BoardColumnDto>>.Success(result, message));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                // Board doesn't exist
+                _logger.LogWarning(ex, "Board not found: {BoardId}", boardId);
+                return NotFound(ApiResponse<object>.Fail($"Board with ID {boardId} does not exist or is inactive"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Database operation failed
+                _logger.LogError(ex, "Database operation failed for board: {BoardId}", boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.Fail("A database error occurred while fetching board columns. Please try again later."));
+            }
+            catch (Exception ex)
+            {
+                // Unexpected error
+                _logger.LogError(ex, "Unexpected error occurred in BoardController.GetBoardColumnsByBoardId for board: {BoardId}", boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.Fail("An unexpected error occurred while fetching board columns. Please contact support if the issue persists."));
             }
         }
 
