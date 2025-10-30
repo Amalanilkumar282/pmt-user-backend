@@ -38,8 +38,9 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("reporter_id")]
         public int? ReporterId { get; set; }
 
-        [Column("labels", TypeName = "jsonb")]
-        public string Labels { get; set; } = "[]";
+        [Column("labels")]
+        public List<string>? Labels { get; set; } = new();
+
 
         [Column("created_by")]
         public int? CreatedBy { get; set; }

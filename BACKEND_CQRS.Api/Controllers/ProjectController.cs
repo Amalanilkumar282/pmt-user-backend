@@ -4,6 +4,7 @@ using BACKEND_CQRS.Application.Query;
 using BACKEND_CQRS.Application.Query.Project;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace BACKEND_CQRS.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ProjectController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -123,8 +125,10 @@ namespace BACKEND_CQRS.Api.Controllers
             return result;
         }
 
+
+
         [HttpGet("{projectId}/users")]
-        public async Task<ApiResponse<List<UserDto>>> GetUsersByProject(Guid projectId)
+        public async Task<ApiResponse<List<ProjectUserDto>>> GetUsersByProject(Guid projectId)
         {
             var query = new GetUsersByProjectIdQuery(projectId);
             var result = await _mediator.Send(query);

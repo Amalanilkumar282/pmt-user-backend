@@ -3,6 +3,7 @@ using BACKEND_CQRS.Application.Query;
 using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace BACKEND_CQRS.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class LabelController : ControllerBase
     {
         private readonly IMediator _mediator;
