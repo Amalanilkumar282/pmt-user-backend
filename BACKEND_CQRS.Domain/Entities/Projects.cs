@@ -74,9 +74,13 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("isimportedfromjira")]
         public bool? IsImportedFromJira { get; set; }
 
-            [Column("template_id")]
-            public int? TemplateId { get; set; }
-    }
-    }
+        [Column("template_id")]
+        public int? TemplateId { get; set; }
 
+        // Navigation property for project manager role
+        // Using ForeignKey attribute to map to project_manager_role_id column
+        [ForeignKey("ProjectManagerRoleId")]
+        public Role ProjectManagerRole { get; set; }
+    }
+}
 
