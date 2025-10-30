@@ -1,4 +1,5 @@
-﻿using BACKEND_CQRS.Domain.Persistance;
+using BACKEND_CQRS.Domain.Services;
+using BACKEND_CQRS.Domain.Persistance;
 using BACKEND_CQRS.Infrastructure.Context;
 using BACKEND_CQRS.Infrastructure.Repository;
 using BACKEND_CQRS.Infrastructure.Services;
@@ -34,10 +35,13 @@ namespace BACKEND_CQRS.Infrastructure
             services.AddScoped<IStatusRepository, StatusRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IIssueRepository, IssueRepository>();
+            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             //services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 
             // Services
             services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<IPasswordHashService, PasswordHashService>();
             //services.AddScoped<IAuthService, AuthService>();
 
             // Logging
