@@ -2,12 +2,14 @@
 using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query.Teams;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BACKEND_CQRS.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TeamController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -119,6 +121,14 @@ namespace BACKEND_CQRS.Api.Controllers
                 return NotFound(new { message = "Team not found." });
 
             return Ok(new { message = "Team updated successfully." });
+        }
+
+
+        [HttpGet("projects/{projectId}/member-count")]
+        public async Task<IActionResult> GetProjectMemberCount(Guid projectId)
+        {
+            var result = await _mediator.Send(new GetProjectMemberCountQuery(projectId));
+            return Ok(result);
         }
     }
 

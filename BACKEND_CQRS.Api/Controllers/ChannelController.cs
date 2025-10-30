@@ -4,6 +4,7 @@ using BACKEND_CQRS.Application.Query;
 using BACKEND_CQRS.Application.Query.Messages;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,6 +12,7 @@ namespace BACKEND_CQRS.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ChannelController : ControllerBase
     {
         private readonly IMediator _mediator;
