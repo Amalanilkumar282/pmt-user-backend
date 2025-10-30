@@ -16,7 +16,7 @@ namespace BACKEND_CQRS.Domain.Persistance
         //Task<Teams?> GetTeamByIdAsync(int teamId);
 
         // Custom query methods specific to Teams
-        Task<List<Teams>> GetTeamsByProjectIdAsync(Guid projectId);
+        //Task<List<Teams>> GetTeamsByProjectIdAsync(Guid projectId);
         //Task<List<Team>> GetTeamsByUserIdAsync(int userId);
 
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace BACKEND_CQRS.Application.Query.Teams
 {
-    public class GetTeamsByProjectIdQuery : IRequest<List<TeamDto>>
+    public class GetTeamsByProjectIdQuery : IRequest<List<TeamDetailsDto>>
     {
         public Guid ProjectId { get; }
 

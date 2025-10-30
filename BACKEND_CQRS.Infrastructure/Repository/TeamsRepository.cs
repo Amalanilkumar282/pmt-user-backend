@@ -45,41 +45,7 @@ namespace BACKEND_CQRS.Infrastructure.Repository
         }
 
         // 🔹 GET TEAMS BY PROJECT
-        public async Task<List<Teams>> GetTeamsByProjectIdAsync(Guid projectId)
-        {
-            return await _context.Teams
-                .Include(t => t.Project)
-                .Include(t => t.Lead)
-                    .ThenInclude(pm => pm.User)               // ✅ Lead’s user details
-                .Include(t => t.CreatedByMember)
-                    .ThenInclude(pm => pm.User)               // ✅ Creator’s user details
-                .Where(t => t.ProjectId == projectId && (t.IsActive ?? true))
-                .Select(t => new Teams
-                {
-                    Id = t.Id,
-                    ProjectId = t.ProjectId,
-                    Name = t.Name,
-                    Description = t.Description,
-                    LeadId = t.LeadId,
-                    CreatedBy = t.CreatedBy,
-                    IsActive = t.IsActive,
-                    Label = t.Label,
-                    CreatedAt = t.CreatedAt,
-                    UpdatedAt = t.UpdatedAt,
-                    Project = t.Project,
-                    Lead = t.Lead,
-                    CreatedByMember = t.CreatedByMember,
-
-                    MemberCount = _context.TeamMembers
-                        .Count(tm => tm.TeamId == t.Id &&
-                            _context.ProjectMembers.Any(pm => pm.Id == tm.ProjectMemberId && pm.ProjectId == projectId)),
-
-                    ActiveSprintCount = _context.Sprints
-                        .Count(s => s.TeamId == t.Id && s.ProjectId == projectId && s.Status == "ACTIVE")
-                })
-                .AsNoTracking()
-                .ToListAsync();
-        }
+        
 
         public async Task<bool> DeleteTeamAsync(int teamId)
         {

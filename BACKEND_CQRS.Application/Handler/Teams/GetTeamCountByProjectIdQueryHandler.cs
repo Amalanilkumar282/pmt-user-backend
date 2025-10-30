@@ -15,33 +15,34 @@ namespace BACKEND_CQRS.Application.Handlers.TeamHandlers
 
     public class GetTeamCountByProjectIdHandler : IRequestHandler<GetTeamCountByProjectIdQuery, TeamCountDto>
     {
-        private readonly ITeamRepository _teamRepository;
-        private readonly AppDbContext _context; // 👈 inject context for extra query
+        private readonly AppDbContext _context;
 
-        public GetTeamCountByProjectIdHandler(ITeamRepository teamRepository, AppDbContext context)
+        public GetTeamCountByProjectIdHandler(AppDbContext context)
         {
-            _teamRepository = teamRepository;
             _context = context;
         }
 
         public async Task<TeamCountDto> Handle(GetTeamCountByProjectIdQuery request, CancellationToken cancellationToken)
         {
-            var teams = await _teamRepository.GetTeamsByProjectIdAsync(request.ProjectId);
+            // 1️⃣ Get all teams in the given project
+            var teams = await _context.Teams
+                .AsNoTracking()
+                .Where(t => t.ProjectId == request.ProjectId)
+                .ToListAsync(cancellationToken);
 
-            // 1️⃣ Count total & active teams
+            // 2️⃣ Count total & active teams
             var totalTeams = teams.Count;
             var activeTeams = teams.Count(t => t.IsActive == true);
 
-            // 2️⃣ Count assigned members — using TeamMembers + ProjectMembers
+            // 3️⃣ Count unique assigned project members
             var assignedMembersCount = await _context.TeamMembers
-   .Where(tm => _context.ProjectMembers
-       .Any(pm => pm.Id == tm.ProjectMemberId && pm.ProjectId == request.ProjectId))
-   .Select(tm => tm.ProjectMemberId)
-   .Distinct()
-   .CountAsync();
+                .Where(tm => _context.ProjectMembers
+                    .Any(pm => pm.Id == tm.ProjectMemberId && pm.ProjectId == request.ProjectId))
+                .Select(tm => tm.ProjectMemberId)
+                .Distinct()
+                .CountAsync(cancellationToken);
 
-
-            // 3️⃣ Return combined DTO
+            // 4️⃣ Build and return DTO
             return new TeamCountDto
             {
                 TotalTeams = totalTeams,
