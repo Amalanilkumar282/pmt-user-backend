@@ -11,6 +11,7 @@
 		<PackageReference Include="MediatR" Version="13.0.0" />
 		<PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
 	</ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BACKEND_CQRS.Domain\BACKEND_CQRS.Domain.csproj" />
@@ -19,6 +20,7 @@
   <ItemGroup>
     <Folder Include="Handler\Status\" />
     <Folder Include="Query\Status\" />
+    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>
