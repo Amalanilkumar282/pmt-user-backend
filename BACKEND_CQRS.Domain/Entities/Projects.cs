@@ -78,6 +78,10 @@ namespace BACKEND_CQRS.Domain.Entities
 
             [Column("template_id")]
             public int? TemplateId { get; set; }
+
+            // Navigation property for project manager role
+            // This is configured in AppDbContext.OnModelCreating to use project_manager_role_id
+            public Role ProjectManagerRole { get; set; }
         }
     }
 
