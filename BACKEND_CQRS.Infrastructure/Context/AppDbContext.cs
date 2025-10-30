@@ -28,5 +28,7 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<BoardBoardColumnMap> BoardBoardColumnMaps { get; set; }
         public DbSet<Status> Statuses { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; } // ✅ Added RefreshToken
+
+        public DbSet<Epic> Epic { get; set; }   
     }
 }

@@ -120,6 +120,14 @@ namespace BACKEND_CQRS.Api.Controllers
 
             return Ok(new { message = "Team updated successfully." });
         }
+
+
+        [HttpGet("projects/{projectId}/member-count")]
+        public async Task<IActionResult> GetProjectMemberCount(Guid projectId)
+        {
+            var result = await _mediator.Send(new GetProjectMemberCountQuery(projectId));
+            return Ok(result);
+        }
     }
 
 
