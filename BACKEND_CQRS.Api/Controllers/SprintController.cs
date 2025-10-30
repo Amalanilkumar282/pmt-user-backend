@@ -72,5 +72,19 @@ namespace BACKEND_CQRS.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteSprint(Guid id)
+        {
+            var command = new DeleteSprintCommand(id);
+            var result = await _mediator.Send(command);
+
+            if (result.Status != 200)
+            {
+                return NotFound(result);
+            }
+
+            return Ok(result);
+        }
     }
 }
