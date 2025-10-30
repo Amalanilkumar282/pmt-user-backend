@@ -85,6 +85,11 @@ namespace BACKEND_CQRS.Api.Controllers
             return await _mediator.Send(query);
         }
 
-
+        [HttpGet("epic/{epicId}")]
+        public async Task<ApiResponse<List<IssueDto>>> GetIssuesByEpic([FromRoute] Guid epicId)
+        {
+            var query = new GetIssuesByEpicIdQuery(epicId);
+            return await _mediator.Send(query);
+        }
     }
 }
