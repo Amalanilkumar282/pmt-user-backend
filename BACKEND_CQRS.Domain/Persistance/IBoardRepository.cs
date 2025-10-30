@@ -55,6 +55,11 @@ namespace BACKEND_CQRS.Domain.Persistance
         Task<bool> SoftDeleteBoardAsync(int boardId, int? deletedBy = null);
 
         /// <summary>
+        /// Update a board's properties
+        /// </summary>
+        Task<Board> UpdateBoardAsync(int boardId, Board updatedBoard);
+
+        /// <summary>
         /// Update a board column's properties
         /// </summary>
         Task<BoardColumn> UpdateBoardColumnAsync(Guid columnId, BoardColumn updatedColumn);
