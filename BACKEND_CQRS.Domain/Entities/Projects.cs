@@ -78,6 +78,6 @@ namespace BACKEND_CQRS.Domain.Entities
 
             [Column("template_id")]
             public int? TemplateId { get; set; }
-        }
+    }
     }
 
