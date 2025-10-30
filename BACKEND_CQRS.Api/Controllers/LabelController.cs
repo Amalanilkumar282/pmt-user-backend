@@ -6,6 +6,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BACKEND_CQRS.Api.Controllers
 {
@@ -26,6 +27,7 @@ namespace BACKEND_CQRS.Api.Controllers
             return result;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ApiResponse<List<LabelDto>>> GetAllLabels()
         {
