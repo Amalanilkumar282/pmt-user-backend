@@ -78,5 +78,5 @@ namespace BACKEND_CQRS.Domain.Entities
             public int? TemplateId { get; set; }
     }
     }
-}
+
 
