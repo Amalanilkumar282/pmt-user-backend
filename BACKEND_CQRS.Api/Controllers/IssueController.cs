@@ -79,6 +79,13 @@ namespace BACKEND_CQRS.Api.Controllers
             return await _mediator.Send(query);
         }
 
+        [HttpGet("project/{projectId}/completed-count")]
+        public async Task<ApiResponse<int>> GetCompletedIssueCountByProject([FromRoute] Guid projectId)
+        {
+            var query = new GetCompletedIssueCountByProjectQuery(projectId);
+            return await _mediator.Send(query);
+        }
+
         [HttpGet("user/{userId}")]
         public async Task<ApiResponse<List<IssueDto>>> GetIssuesByUser([FromRoute] int userId)
         {
