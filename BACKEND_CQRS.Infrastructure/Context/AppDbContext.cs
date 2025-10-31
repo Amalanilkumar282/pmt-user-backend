@@ -34,6 +34,6 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<Epic> Epic { get; set; }   
 
         public DbSet<Role> Roles { get; set; }
-        public DbSet<RefreshToken> RefreshTokens { get; set; }
+        
     }
 }
