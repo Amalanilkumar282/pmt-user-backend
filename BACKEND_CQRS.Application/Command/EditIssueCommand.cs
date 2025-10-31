@@ -21,5 +21,6 @@ namespace BACKEND_CQRS.Application.Command
         public int? ReporterId { get; set; }
         public string AttachmentUrl { get; set; }
         public int? StatusId { get; set; }
+        public string Labels { get; set; } // Stores labels as JSON string
     }
 }

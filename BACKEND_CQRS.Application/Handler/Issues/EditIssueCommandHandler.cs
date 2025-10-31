@@ -72,6 +72,9 @@ namespace BACKEND_CQRS.Application.Handler.Issues
             if (request.StatusId.HasValue)
                 issue.StatusId = request.StatusId;
 
+            if (request.Labels != null)
+                issue.Labels = request.Labels;
+
             issue.UpdatedAt = DateTimeOffset.UtcNow;
 
             await _issueRepository.UpdateAsync(issue);
