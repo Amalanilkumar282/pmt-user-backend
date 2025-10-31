@@ -58,6 +58,7 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("type")]
         public string? Type { get; set; }
 
+        // Audit fields - now exist in the database
         [Column("created_by")]
         public int? CreatedBy { get; set; }
 
@@ -70,7 +71,7 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("is_deleted")]
         public bool IsDeleted { get; set; } = false;
 
-        // Navigation properties
+        // Self-referencing navigation properties
         [ForeignKey("CreatedBy")]
         public Users? CreatedByUser { get; set; }
 

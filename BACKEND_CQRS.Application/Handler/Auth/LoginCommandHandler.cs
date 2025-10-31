@@ -101,7 +101,7 @@ namespace BACKEND_CQRS.Application.Handler.Auth
                     Name = user.Name,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
-                    AccessTokenExpires = DateTimeOffset.UtcNow.AddMinutes(accessTokenExpirationMinutes),
+                    AccessTokenExpires = DateTime.UtcNow.AddMinutes(accessTokenExpirationMinutes),
                     RefreshTokenExpires = refreshTokenEntity.ExpiresAt,
                     IsActive = user.IsActive ?? false,
                     IsSuperAdmin = user.IsSuperAdmin ?? false
