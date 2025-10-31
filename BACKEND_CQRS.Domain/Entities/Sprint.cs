@@ -46,6 +46,24 @@ namespace BACKEND_CQRS.Domain.Entities
         public DateTimeOffset? UpdatedAt { get; set; }
 
         [Column("team_id")]
-        public int? TeamId { get; set; }
+        public int? TeamId { get; set; } // Navigation properties
+
+
+          [ForeignKey("ProjectId")]
+           public Projects Project { get; set; }
+
+          [ForeignKey("CreatedBy")]
+          public Users? Creator { get; set; }
+
+          [ForeignKey("UpdatedBy")]
+           public Users? Updater { get; set; }
+
+        [ForeignKey(nameof(TeamId))]
+        public Teams? Team { get; set; }
+
+
+        public ICollection<Issue> Issues { get; set; }
+
+
     }
 }
