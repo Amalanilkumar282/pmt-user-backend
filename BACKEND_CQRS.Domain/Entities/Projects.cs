@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PmtAdmin.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -82,6 +83,15 @@ namespace BACKEND_CQRS.Domain.Entities
         [ForeignKey("ProjectManagerRoleId")]
         public Role ProjectManagerRole { get; set; }
 
+
+        public ICollection<Teams> Teams { get; set; }
+        public ICollection<Board> Boards { get; set; }
+        public ICollection<ProjectMembers> ProjectMembers { get; set; }
+        public ICollection<Sprint> Sprints { get; set; }
+        public ICollection<Epic> Epics { get; set; }
+        public ICollection<Issue> Issues { get; set; }
+        public ICollection<JiraAuthorization> JiraAuthorizations { get; set; }
+        public ICollection<CustomField> CustomFields { get; set; }
 
         // ForeignKey 
     }
