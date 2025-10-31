@@ -86,6 +86,13 @@ namespace BACKEND_CQRS.Api.Controllers
             return await _mediator.Send(query);
         }
 
+        [HttpGet("sprint/{sprintId}/completed-count")]
+        public async Task<ApiResponse<int>> GetCompletedIssueCountBySprint([FromRoute] Guid sprintId)
+        {
+            var query = new GetCompletedIssueCountBySprintQuery(sprintId);
+            return await _mediator.Send(query);
+        }
+
         [HttpGet("user/{userId}")]
         public async Task<ApiResponse<List<IssueDto>>> GetIssuesByUser([FromRoute] int userId)
         {
