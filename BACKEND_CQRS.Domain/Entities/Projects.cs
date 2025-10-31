@@ -125,10 +125,6 @@ namespace BACKEND_CQRS.Domain.Entities
 
         public ICollection<CustomField> CustomFields { get; set; }
 
-        public ICollection<StarredProjects>? StarredProjects { get; set; }
-
-
-
         // ForeignKey 
     }
 }

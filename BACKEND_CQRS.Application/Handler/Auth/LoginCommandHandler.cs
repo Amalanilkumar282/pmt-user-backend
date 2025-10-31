@@ -81,8 +81,8 @@ namespace BACKEND_CQRS.Application.Handler.Auth
                 {
                     UserId = user.Id,
                     Token = refreshToken,
-                    ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpirationDays),
-                    CreatedAt = DateTime.UtcNow
+                    ExpiresAt = DateTimeOffset.UtcNow.AddDays(refreshTokenExpirationDays),
+                    CreatedAt = DateTimeOffset.UtcNow
                 };
 
                 await _refreshTokenRepository.CreateAsync(refreshTokenEntity);

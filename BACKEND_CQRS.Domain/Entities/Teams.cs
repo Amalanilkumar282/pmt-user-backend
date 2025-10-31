@@ -75,8 +75,6 @@ namespace BACKEND_CQRS.Domain.Entities
         public ICollection<Board> Boards { get; set; }
         public ICollection<ProjectMembers> ProjectMembers { get; set; }
         public ICollection<Channel> Channels { get; set; }
-
-        public ICollection<Sprint>? Sprints { get; set; }
     }
 }
 
