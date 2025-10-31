@@ -52,6 +52,36 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             }
         }
 
+        public async Task<Status?> GetStatusByIdAsync(int statusId)
+        {
+            try
+            {
+                _logger?.LogInformation("Fetching status with ID: {StatusId}", statusId);
+
+                var status = await _context.Statuses
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.Id == statusId);
+
+                if (status != null)
+                {
+                    _logger?.LogInformation("Found status: {StatusName} with ID: {StatusId}", 
+                        status.StatusName, status.Id);
+                }
+                else
+                {
+                    _logger?.LogWarning("Status with ID {StatusId} not found", statusId);
+                }
+
+                return status;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error fetching status with ID: {StatusId}", statusId);
+                throw new InvalidOperationException(
+                    $"An error occurred while fetching status with ID {statusId}", ex);
+            }
+        }
+
         public async Task<Status> CreateStatusAsync(string statusName)
         {
             if (string.IsNullOrWhiteSpace(statusName))
