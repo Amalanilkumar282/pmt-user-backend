@@ -17,9 +17,9 @@ namespace BACKEND_CQRS.Application.Dto
         [Required]
         public string Title { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
-        public string Priority { get; set; }
+        public string? Priority { get; set; }
 
         public int? AssigneeId { get; set; }
 

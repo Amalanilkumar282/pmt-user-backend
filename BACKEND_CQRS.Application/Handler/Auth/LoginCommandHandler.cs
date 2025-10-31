@@ -88,7 +88,7 @@ namespace BACKEND_CQRS.Application.Handler.Auth
                 await _refreshTokenRepository.CreateAsync(refreshTokenEntity);
 
                 // Update last login
-                user.LastLogin = DateTimeOffset.UtcNow;
+                user.LastLogin = DateTime.UtcNow;
                 await _userRepository.UpdateAsync(user);
 
                 _logger.LogInformation("Login successful for user: {UserId}, Email: {Email}", user.Id, user.Email);
@@ -101,7 +101,7 @@ namespace BACKEND_CQRS.Application.Handler.Auth
                     Name = user.Name,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
-                    AccessTokenExpires = DateTimeOffset.UtcNow.AddMinutes(accessTokenExpirationMinutes),
+                    AccessTokenExpires = DateTime.UtcNow.AddMinutes(accessTokenExpirationMinutes),
                     RefreshTokenExpires = refreshTokenEntity.ExpiresAt,
                     IsActive = user.IsActive ?? false,
                     IsSuperAdmin = user.IsSuperAdmin ?? false
