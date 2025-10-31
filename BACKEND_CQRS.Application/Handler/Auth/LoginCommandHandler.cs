@@ -81,14 +81,14 @@ namespace BACKEND_CQRS.Application.Handler.Auth
                 {
                     UserId = user.Id,
                     Token = refreshToken,
-                    ExpiresAt = DateTimeOffset.UtcNow.AddDays(refreshTokenExpirationDays),
-                    CreatedAt = DateTimeOffset.UtcNow
+                    ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenExpirationDays),
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 await _refreshTokenRepository.CreateAsync(refreshTokenEntity);
 
                 // Update last login
-                user.LastLogin = DateTimeOffset.UtcNow;
+                user.LastLogin = DateTime.UtcNow;
                 await _userRepository.UpdateAsync(user);
 
                 _logger.LogInformation("Login successful for user: {UserId}, Email: {Email}", user.Id, user.Email);

@@ -52,15 +52,19 @@ namespace BACKEND_CQRS.Test.Handler.Team
             Assert.Equal(createdTeamId, result);
 
             _mockRepo.Verify(r => r.CreateTeamAsync(It.Is<Teams>(
-    t => t.Name == command.Name &&
-         t.Description == command.Description &&
-         t.ProjectId == command.ProjectId &&
-         t.CreatedBy == command.CreatedBy &&
-         t.IsActive == true
-)), Times.Once);
+                t => t.Name == command.Name &&
+                     t.Description == command.Description &&
+                     t.ProjectId == command.ProjectId &&
+                     t.CreatedBy == command.CreatedBy &&
+                     t.IsActive == true
+            )), Times.Once);
 
             _mockRepo.Verify(r => r.AddMembersAsync(createdTeamId,
-                It.Is<List<int>>(members => members.Contains(2) && members.Contains(3) && members.Contains(5))),
+                It.Is<List<int>>(members =>
+                    members.Contains(2) &&
+                    members.Contains(3) &&
+                    members.Contains(5) // ✅ includes lead
+                )),
                 Times.Once);
         }
 
@@ -74,21 +78,30 @@ namespace BACKEND_CQRS.Test.Handler.Team
                 Name = "Test Team",
                 Description = "Test Description",
                 LeadId = 7,
-                MemberIds = new List<int> { 7, 8 },
+                MemberIds = new List<int> { 7, 8 }, // lead already in list
                 CreatedBy = 2
             };
 
+            var createdTeamId = 22;
+
             _mockRepo.Setup(r => r.CreateTeamAsync(It.IsAny<Teams>()))
-                     .ReturnsAsync(22);
+                     .ReturnsAsync(createdTeamId);
+
+            _mockRepo.Setup(r => r.AddMembersAsync(It.IsAny<int>(), It.IsAny<List<int>>()))
+                     .Returns(Task.CompletedTask);
 
             // Act
             var result = await _handler.Handle(command, CancellationToken.None);
 
             // Assert
-            Assert.Equal(22, result);
+            Assert.Equal(createdTeamId, result);
 
-            _mockRepo.Verify(r => r.AddMembersAsync(22,
-                It.Is<List<int>>(m => m.Count == 2 && m.Contains(7) && m.Contains(8))),
+            _mockRepo.Verify(r => r.AddMembersAsync(createdTeamId,
+                It.Is<List<int>>(members =>
+                    members.Count == 2 &&
+                    members.Contains(7) &&
+                    members.Contains(8)
+                )),
                 Times.Once);
         }
     }

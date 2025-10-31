@@ -34,10 +34,10 @@ namespace BACKEND_CQRS.Domain.Entities
         public string? AvatarUrl { get; set; }
 
         [Column("is_active")]
-        public bool IsActive { get; set; } = true;
+        public bool? IsActive { get; set; } = true;
 
         [Column("is_super_admin")]
-        public bool IsSuperAdmin { get; set; } = false;
+        public bool? IsSuperAdmin { get; set; } = false;
 
         [Column("last_login")]
         public DateTime? LastLogin { get; set; }
@@ -84,5 +84,12 @@ namespace BACKEND_CQRS.Domain.Entities
         public ICollection<Projects> ManagedProjects { get; set; }
         public ICollection<Teams> LeadTeams { get; set; }
         public ICollection<DeliveryUnit> ManagedDeliveryUnits { get; set; }
+
+        public ICollection<StarredProjects>? StarredProjects { get; set; }
+
+
+
+
+
     }
 }
