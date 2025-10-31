@@ -51,7 +51,7 @@ namespace BACKEND_CQRS.Infrastructure.Context
                       .OnDelete(DeleteBehavior.Restrict);
 
                 // The navigation 'Users' (FK: AddedBy) is a separate relationship to Users (no inverse collection)
-                entity.HasOne(pm => pm.Users)
+                entity.HasOne(pm => pm.AddedByUser)
                       .WithMany()
                       .HasForeignKey(pm => pm.AddedBy)
                       .OnDelete(DeleteBehavior.Restrict);
@@ -76,7 +76,28 @@ namespace BACKEND_CQRS.Infrastructure.Context
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Configure Projects relationships with Users
+            //// Configure Projects relationships with Users
+            //modelBuilder.Entity<Projects>(entity =>
+            //{
+            //    // ProjectManager relationship
+            //    entity.HasOne(p => p.ProjectManager)
+            //          .WithMany(u => u.ManagedProjects)
+            //          .HasForeignKey(p => p.ProjectManagerId)
+            //          .OnDelete(DeleteBehavior.Restrict);
+
+            //    // Creator relationship (no inverse collection)
+            //    entity.HasOne(p => p.Creator)
+            //          .WithMany()
+            //          .HasForeignKey(p => p.CreatedBy)
+            //          .OnDelete(DeleteBehavior.Restrict);
+
+            //    // Updater relationship (no inverse collection)
+            //    entity.HasOne(p => p.Updater)
+            //          .WithMany()
+            //          .HasForeignKey(p => p.UpdatedBy)
+            //          .OnDelete(DeleteBehavior.Restrict);
+            //});
+
             modelBuilder.Entity<Projects>(entity =>
             {
                 // ProjectManager relationship
@@ -96,7 +117,14 @@ namespace BACKEND_CQRS.Infrastructure.Context
                       .WithMany()
                       .HasForeignKey(p => p.UpdatedBy)
                       .OnDelete(DeleteBehavior.Restrict);
+
+                // ✅ Explicitly configure Project → Teams relationship
+                entity.HasMany(p => p.Teams)
+                      .WithOne(t => t.Project)
+                      .HasForeignKey(t => t.ProjectId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
+
 
             // Configure Epic relationships with Users
             modelBuilder.Entity<Epic>(entity =>

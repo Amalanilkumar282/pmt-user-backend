@@ -130,6 +130,17 @@ namespace BACKEND_CQRS.Api.Controllers
             var result = await _mediator.Send(new GetProjectMemberCountQuery(projectId));
             return Ok(result);
         }
+
+        [HttpGet("{teamId}")]
+
+        public async Task<IActionResult> GetTeamDetailsByTeamId(int teamId)
+        {
+            var query = new GetTeamDetailsByTeamIdQuery(teamId);
+
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
+        }
     }
 
 

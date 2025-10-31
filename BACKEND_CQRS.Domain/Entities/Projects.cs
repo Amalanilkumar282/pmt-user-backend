@@ -111,6 +111,7 @@ namespace BACKEND_CQRS.Domain.Entities
 
         public ICollection<Teams> Teams { get; set; }
 
+
         public ICollection<Board> Boards { get; set; }
 
         public ICollection<ProjectMembers> ProjectMembers { get; set; }
