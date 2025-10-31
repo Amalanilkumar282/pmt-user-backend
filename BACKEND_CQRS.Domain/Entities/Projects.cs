@@ -79,18 +79,50 @@ namespace BACKEND_CQRS.Domain.Entities
         public int? TemplateId { get; set; }
 
         // Navigation property for project manager role
-        // Using ForeignKey attribute to map to project_manager_role_id column
-        [ForeignKey("ProjectManagerRoleId")]
-        public Role ProjectManagerRole { get; set; }
+        // Navigation properties
 
+        [ForeignKey("ProjectManagerId")]
+
+        public Users? ProjectManager { get; set; }
+
+        [ForeignKey("ProjectManagerRoleId")]
+
+        public Role? ProjectManagerRole { get; set; }
+
+        [ForeignKey("StatusId")]
+
+        public ProjectStatus? Status { get; set; }
+
+        [ForeignKey("DeliveryUnitId")]
+
+        public DeliveryUnit? DeliveryUnit { get; set; }
+
+        [ForeignKey("CreatedBy")]
+
+        public Users? Creator { get; set; }
+
+        [ForeignKey("UpdatedBy")]
+
+        public Users? Updater { get; set; }
+
+        [ForeignKey("TemplateId")]
+
+        public ProjectTemplate? Template { get; set; }
 
         public ICollection<Teams> Teams { get; set; }
+
         public ICollection<Board> Boards { get; set; }
+
         public ICollection<ProjectMembers> ProjectMembers { get; set; }
+
         public ICollection<Sprint> Sprints { get; set; }
+
         public ICollection<Epic> Epics { get; set; }
+
         public ICollection<Issue> Issues { get; set; }
+
         public ICollection<JiraAuthorization> JiraAuthorizations { get; set; }
+
         public ICollection<CustomField> CustomFields { get; set; }
 
         // ForeignKey 
