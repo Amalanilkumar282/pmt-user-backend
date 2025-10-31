@@ -10,6 +10,11 @@ namespace BACKEND_CQRS.Domain.Persistance
         Task<Status?> GetStatusByNameAsync(string statusName);
 
         /// <summary>
+        /// Get status by ID
+        /// </summary>
+        Task<Status?> GetStatusByIdAsync(int statusId);
+
+        /// <summary>
         /// Create a new status
         /// </summary>
         Task<Status> CreateStatusAsync(string statusName);

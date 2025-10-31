@@ -10,7 +10,7 @@ namespace BACKEND_CQRS.Application.Dto
 
         [Required]
         public string SprintName { get; set; }
-        public string SprintGoal { get; set; }
+        public string? SprintGoal { get; set; }
         public int? TeamAssigned { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? DueDate { get; set; }

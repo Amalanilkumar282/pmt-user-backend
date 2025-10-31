@@ -27,7 +27,9 @@ namespace BACKEND_CQRS.Domain.Entities
         public DateTime? UpdatedAt { get; set; }
 
         // No 'virtual' keyword — plain references
+        [ForeignKey(nameof(TeamId))]
         public Teams? Team { get; set; }
+        [ForeignKey(nameof(ProjectMemberId))]
         public ProjectMembers? ProjectMember { get; set; }
     }
 
