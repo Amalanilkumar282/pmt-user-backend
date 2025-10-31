@@ -83,7 +83,7 @@ namespace BACKEND_CQRS.Domain.Entities
 
         public ICollection<ProjectMembers> ProjectMembers { get; set; }
         public ICollection<Projects> ManagedProjects { get; set; }
-        public ICollection<Teams> LeadTeams { get; set; }
+         
         public ICollection<DeliveryUnit> ManagedDeliveryUnits { get; set; }
 
         public ICollection<StarredProjects>? StarredProjects { get; set; }
