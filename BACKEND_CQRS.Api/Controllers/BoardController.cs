@@ -1,6 +1,7 @@
 using BACKEND_CQRS.Application.Command;
 using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query;
+using BACKEND_CQRS.Application.Query.Boards;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -170,6 +171,73 @@ namespace BACKEND_CQRS.Api.Controllers
         }
 
         /// <summary>
+        /// Get all board columns by board ID
+        /// </summary>
+        /// <param name="boardId">The board ID</param>
+        /// <returns>List of board columns ordered by position</returns>
+        /// <response code="200">Returns the list of board columns (may be empty if no columns exist)</response>
+        /// <response code="400">If the board ID is invalid</response>
+        /// <response code="404">If the board does not exist or is inactive</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET /api/board/1/columns
+        /// 
+        /// This endpoint returns all columns for the specified board, ordered by their position.
+        /// Columns include their ID, name, color, position, and associated status information.
+        /// </remarks>
+        [HttpGet("{boardId:int}/columns")]
+        [ProducesResponseType(typeof(ApiResponse<List<BoardColumnDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<BoardColumnDto>>>> GetBoardColumnsByBoardId(int boardId)
+        {
+            try
+            {
+                // Validate input
+                if (boardId <= 0)
+                {
+                    _logger.LogWarning("Invalid board ID provided: {BoardId}", boardId);
+                    return BadRequest(ApiResponse<object>.Fail("Invalid board ID. Board ID must be greater than 0."));
+                }
+
+                _logger.LogInformation("API request received to fetch columns for board: {BoardId}", boardId);
+
+                var result = await _mediator.Send(new GetBoardColumnsByBoardIdQuery(boardId));
+
+                var message = result.Count > 0
+                    ? $"Successfully fetched {result.Count} column(s) for board {boardId}"
+                    : $"No columns found for board {boardId}";
+
+                return Ok(ApiResponse<List<BoardColumnDto>>.Success(result, message));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                // Board doesn't exist
+                _logger.LogWarning(ex, "Board not found: {BoardId}", boardId);
+                return NotFound(ApiResponse<object>.Fail($"Board with ID {boardId} does not exist or is inactive"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Database operation failed
+                _logger.LogError(ex, "Database operation failed for board: {BoardId}", boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.Fail("A database error occurred while fetching board columns. Please try again later."));
+            }
+            catch (Exception ex)
+            {
+                // Unexpected error
+                _logger.LogError(ex, "Unexpected error occurred in BoardController.GetBoardColumnsByBoardId for board: {BoardId}", boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.Fail("An unexpected error occurred while fetching board columns. Please contact support if the issue persists."));
+            }
+        }
+
+        /// <summary>
         /// Create a new board column
         /// </summary>
         /// <param name="command">The board column creation details</param>
@@ -283,6 +351,116 @@ namespace BACKEND_CQRS.Api.Controllers
         }
 
         /// <summary>
+        /// Update a board column's properties (name, color, position, or status)
+        /// </summary>
+        /// <param name="columnId">The board column ID to update</param>
+        /// <param name="command">The update details</param>
+        /// <returns>Updated board column details</returns>
+        /// <response code="200">Board column updated successfully</response>
+        /// <response code="400">If the input is invalid or column/board doesn't exist</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request to change position from 8 to 3 (will automatically shift columns 3-7 to 4-8):
+        /// 
+        ///     PUT /api/board/column/3fa85f64-5717-4562-b3fc-2c963f66afa6
+        ///     {
+        ///        "boardId": 1,
+        ///        "position": 3
+        ///     }
+        ///     
+        /// Sample request to update color and name:
+        /// 
+        ///     PUT /api/board/column/3fa85f64-5717-4562-b3fc-2c963f66afa6
+        ///     {
+        ///        "boardId": 1,
+        ///        "boardColumnName": "In Progress",
+        ///        "boardColor": "#FF5733"
+        ///     }
+        ///     
+        /// Sample request to change status:
+        /// 
+        ///     PUT /api/board/column/3fa85f64-5717-4562-b3fc-2c963f66afa6
+        ///     {
+        ///        "boardId": 1,
+        ///        "statusName": "Completed"
+        ///     }
+        /// </remarks>
+        [HttpPut("column/{columnId:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardColumnResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardColumnResponseDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardColumnResponseDto>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<UpdateBoardColumnResponseDto>>> UpdateBoardColumn(
+            [FromRoute] Guid columnId,
+            [FromBody] UpdateBoardColumnCommand command)
+        {
+            try
+            {
+                // Validate input
+                if (columnId == Guid.Empty)
+                {
+                    _logger.LogWarning("Invalid column ID provided: {ColumnId}", columnId);
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail(
+                        "Invalid column ID. Column ID cannot be empty."));
+                }
+
+                // Set the columnId from the route parameter
+                command.ColumnId = columnId;
+
+                // Manual validation after setting columnId
+                // Check required fields
+                if (command.BoardId <= 0)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("BoardId is required and must be greater than 0"));
+                }
+
+                // Validate optional fields if provided
+                if (!string.IsNullOrWhiteSpace(command.BoardColumnName) && command.BoardColumnName.Length > 100)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("BoardColumnName cannot exceed 100 characters"));
+                }
+
+                if (!string.IsNullOrWhiteSpace(command.BoardColor) && !System.Text.RegularExpressions.Regex.IsMatch(command.BoardColor, @"^#[0-9A-Fa-f]{6}$"))
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("BoardColor must be in hex format (e.g., #FF5733)"));
+                }
+
+                if (command.Position.HasValue && command.Position.Value < 1)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("Position must be greater than 0"));
+                }
+
+                if (!string.IsNullOrWhiteSpace(command.StatusName) && command.StatusName.Length > 100)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardColumnResponseDto>.Fail("StatusName cannot exceed 100 characters"));
+                }
+
+                _logger.LogInformation(
+                    "API request received to update board column {ColumnId} for board {BoardId}",
+                    columnId, command.BoardId);
+
+                var result = await _mediator.Send(command);
+
+                if (result.Status == 200)
+                {
+                    return Ok(result);
+                }
+
+                // If status is 400, it's a business logic failure
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, 
+                    "Unexpected error occurred in BoardController.UpdateBoardColumn for column: {ColumnId}",
+                    columnId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<UpdateBoardColumnResponseDto>.Fail(
+                        "An unexpected error occurred while updating the board column. Please contact support if the issue persists."));
+            }
+        }
+
+        /// <summary>
         /// Delete a board (soft delete - sets IsActive to false)
         /// </summary>
         /// <param name="boardId">The board ID to delete</param>
@@ -326,6 +504,215 @@ namespace BACKEND_CQRS.Api.Controllers
                     StatusCodes.Status500InternalServerError,
                     ApiResponse<bool>.Fail(
                         "An unexpected error occurred while deleting the board. Please contact support if the issue persists."));
+            }
+        }
+
+        /// <summary>
+        /// Update a board's properties (name, description, type, team association, status, or metadata)
+        /// </summary>
+        /// <param name="boardId">The board ID to update</param>
+        /// <param name="command">The update details</param>
+        /// <returns>Updated board details</returns>
+        /// <response code="200">Board updated successfully</response>
+        /// <response code="400">If the input is invalid or board doesn't exist</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request to update board name and description:
+        /// 
+        ///     PUT /api/board/1
+        ///     {
+        ///        "name": "Updated Board Name",
+        ///        "description": "Updated description"
+        ///     }
+        ///     
+        /// Sample request to change board type and add team:
+        /// 
+        ///     PUT /api/board/1
+        ///     {
+        ///        "type": "team",
+        ///        "teamId": 5
+        ///     }
+        ///     
+        /// Sample request to remove team association:
+        /// 
+        ///     PUT /api/board/1
+        ///     {
+        ///        "removeTeamAssociation": true,
+        ///        "type": "custom"
+        ///     }
+        ///     
+        /// Sample request to deactivate a board:
+        /// 
+        ///     PUT /api/board/1
+        ///     {
+        ///        "isActive": false,
+        ///        "updatedBy": 123
+        ///     }
+        /// </remarks>
+        [HttpPut("{boardId:int}")]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardResponseDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<UpdateBoardResponseDto>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<UpdateBoardResponseDto>>> UpdateBoard(
+            [FromRoute] int boardId,
+            [FromBody] UpdateBoardCommand command)
+        {
+            try
+            {
+                // Validate input
+                if (boardId <= 0)
+                {
+                    _logger.LogWarning("Invalid board ID provided: {BoardId}", boardId);
+                    return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                        "Invalid board ID. Board ID must be greater than 0."));
+                }
+
+                // Set the boardId from the route parameter
+                command.BoardId = boardId;
+
+                // Manual validation after setting boardId
+                // Validate name if provided
+                if (!string.IsNullOrWhiteSpace(command.Name))
+                {
+                    if (command.Name.Length > 150)
+                    {
+                        return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                            "Board name cannot exceed 150 characters"));
+                    }
+                    if (command.Name.Trim().Length == 0)
+                    {
+                        return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                            "Board name cannot be empty or whitespace"));
+                    }
+                }
+
+                // Validate description if provided
+                if (command.Description != null && command.Description.Length > 1000)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                        "Description cannot exceed 1000 characters"));
+                }
+
+                // Validate type if provided
+                if (!string.IsNullOrWhiteSpace(command.Type))
+                {
+                    var validTypes = new[] { "kanban", "scrum", "team", "custom" };
+                    if (!validTypes.Contains(command.Type.ToLower()))
+                    {
+                        return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                            "Type must be one of: kanban, scrum, team, custom"));
+                    }
+                }
+
+                // Validate teamId if provided
+                if (command.TeamId.HasValue && command.TeamId.Value < 0)
+                {
+                    return BadRequest(ApiResponse<UpdateBoardResponseDto>.Fail(
+                        "TeamId must be a positive number (use 0 or removeTeamAssociation to remove team)"));
+                }
+
+                _logger.LogInformation(
+                    "API request received to update board {BoardId}",
+                    boardId);
+
+                var result = await _mediator.Send(command);
+
+                if (result.Status == 200)
+                {
+                    return Ok(result);
+                }
+
+                // If status is 400, it's a business logic failure
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, 
+                    "Unexpected error occurred in BoardController.UpdateBoard for board: {BoardId}",
+                    boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<UpdateBoardResponseDto>.Fail(
+                        "An unexpected error occurred while updating the board. Please contact support if the issue persists."));
+            }
+        }
+
+        /// <summary>
+        /// Get a single board by its ID with all related data and columns
+        /// </summary>
+        /// <param name="boardId">The board ID</param>
+        /// <param name="includeInactive">Optional: Include inactive boards (default: false)</param>
+        /// <returns>Board details with columns</returns>
+        /// <response code="200">Returns the board details with all related information</response>
+        /// <response code="400">If the board ID is invalid</response>
+        /// <response code="404">If the board does not exist or is inactive</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET /api/board/1
+        ///     
+        /// Sample request to include inactive boards:
+        /// 
+        ///     GET /api/board/1?includeInactive=true
+        /// 
+        /// This endpoint returns complete board information including:
+        /// - Board details (name, description, type, metadata)
+        /// - Project information (ID, name)
+        /// - Team information (ID, name) if applicable
+        /// - Creator and updater information
+        /// - All board columns ordered by position with status information
+        /// - Timestamps (created, updated)
+        /// </remarks>
+        [HttpGet("{boardId:int}")]
+        [ProducesResponseType(typeof(ApiResponse<BoardWithColumnsDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<BoardWithColumnsDto>>> GetBoardById(
+            int boardId,
+            [FromQuery] bool includeInactive = false)
+        {
+            try
+            {
+                // Validate input
+                if (boardId <= 0)
+                {
+                    _logger.LogWarning("Invalid board ID provided: {BoardId}", boardId);
+                    return BadRequest(ApiResponse<object>.Fail("Invalid board ID. Board ID must be greater than 0."));
+                }
+
+                _logger.LogInformation("API request received to fetch board: {BoardId}. IncludeInactive: {IncludeInactive}", 
+                    boardId, includeInactive);
+
+                var result = await _mediator.Send(new GetBoardByIdQuery(boardId, includeInactive));
+
+                if (result == null)
+                {
+                    _logger.LogWarning("Board {BoardId} not found or is inactive", boardId);
+                    return NotFound(ApiResponse<object>.Fail(
+                        $"Board with ID {boardId} does not exist or is inactive"));
+                }
+
+                var message = $"Successfully fetched board '{result.Name}' with {result.Columns.Count} column(s)";
+
+                return Ok(ApiResponse<BoardWithColumnsDto>.Success(result, message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Database operation failed
+                _logger.LogError(ex, "Database operation failed for board: {BoardId}", boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.Fail("A database error occurred while fetching the board. Please try again later."));
+            }
+            catch (Exception ex)
+            {
+                // Unexpected error
+                _logger.LogError(ex, "Unexpected error occurred in BoardController.GetBoardById for board: {BoardId}", boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.Fail("An unexpected error occurred while fetching the board. Please contact support if the issue persists."));
             }
         }
     }
