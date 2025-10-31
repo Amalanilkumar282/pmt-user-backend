@@ -3,9 +3,12 @@ using BACKEND_CQRS.Domain.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -13,286 +16,494 @@ namespace BACKEND_CQRS.Infrastructure.Services
 {
     public class GeminiAIService : IGeminiAIService
     {
+        private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly ILogger<GeminiAIService> _logger;
-        private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
-        private const int MaxRetries = 3;
+        private const int MAX_RETRIES = 3;
 
-        public GeminiAIService(IConfiguration configuration, ILogger<GeminiAIService> logger, HttpClient httpClient)
+        public GeminiAIService(
+            HttpClient httpClient,
+            IConfiguration configuration,
+            ILogger<GeminiAIService> logger)
         {
+            _httpClient = httpClient;
             _configuration = configuration;
             _logger = logger;
-            _httpClient = httpClient;
-            _apiKey = _configuration["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini API Key is not configured");
         }
 
         public async Task<GeminiSprintPlanResponseDto> GenerateSprintPlanAsync(SprintPlanningContextDto context)
         {
-            var prompt = BuildGeminiPrompt(context);
+            var apiKey = _configuration["Gemini:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                throw new InvalidOperationException("Gemini API key is not configured");
+            }
 
-            for (int attempt = 1; attempt <= MaxRetries; attempt++)
+            // Build the comprehensive prompt
+            var prompt = BuildSprintPlanningPrompt(context);
+
+            _logger.LogInformation("Calling Gemini API to generate sprint plan");
+            _logger.LogDebug($"Prompt length: {prompt.Length} characters");
+
+            // Try up to MAX_RETRIES times
+            for (int attempt = 1; attempt <= MAX_RETRIES; attempt++)
             {
                 try
                 {
-                    _logger.LogInformation($"Calling Gemini AI API (Attempt {attempt}/{MaxRetries})");
+                    var response = await CallGeminiAPIAsync(apiKey, prompt);
 
-                    var response = await CallGeminiAPIAsync(prompt);
-                    var geminiResponse = ParseGeminiResponse(response);
+                    if (response?.SprintPlan != null &&
+                        response.SprintPlan.SelectedIssues != null &&
+                        response.SprintPlan.SelectedIssues.Any())
+                    {
+                        _logger.LogInformation($"Successfully generated sprint plan with {response.SprintPlan.SelectedIssues.Count} issues");
+                        return response;
+                    }
 
-                    _logger.LogInformation("Successfully received and parsed Gemini AI response");
-                    return geminiResponse;
+                    _logger.LogWarning($"Gemini returned empty sprint plan (attempt {attempt}/{MAX_RETRIES})");
+
+                    if (attempt < MAX_RETRIES)
+                    {
+                        // Wait before retrying
+                        await Task.Delay(1000 * attempt);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Error calling Gemini AI (Attempt {attempt}/{MaxRetries})");
+                    _logger.LogError(ex, $"Error calling Gemini API (attempt {attempt}/{MAX_RETRIES})");
 
-                    if (attempt == MaxRetries)
+                    if (attempt == MAX_RETRIES)
                     {
-                        throw new InvalidOperationException($"Failed to generate sprint plan after {MaxRetries} attempts", ex);
+                        throw;
                     }
 
-                    // Wait before retry (exponential backoff)
-                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+                    await Task.Delay(1000 * attempt);
                 }
             }
 
-            throw new InvalidOperationException("Failed to generate sprint plan");
+            // If all retries failed, use fallback logic
+            _logger.LogWarning("All Gemini API attempts failed, using fallback rule-based planning");
+            return GenerateFallbackSprintPlan(context);
         }
 
-        private async Task<string> CallGeminiAPIAsync(string prompt)
+        private async Task<GeminiSprintPlanResponseDto> CallGeminiAPIAsync(string apiKey, string prompt)
         {
-            try
-            {
-                // Using direct REST API call to Gemini
-                var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}";
+            var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
 
-                var requestBody = new
+            var requestBody = new
+            {
+                contents = new[]
                 {
-                    contents = new[]
+                    new
                     {
-                        new
+                        parts = new[]
                         {
-                            parts = new[]
-                            {
-                                new { text = prompt }
-                            }
+                            new { text = prompt }
                         }
                     }
-                };
-
-                var jsonContent = JsonSerializer.Serialize(requestBody);
-                var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                _logger.LogInformation("Sending request to Gemini API");
-                _logger.LogDebug($"Request URL: {apiUrl.Replace(_apiKey, "***")}");
-                _logger.LogDebug($"Request Body: {jsonContent.Substring(0, Math.Min(500, jsonContent.Length))}...");
-
-                var response = await _httpClient.PostAsync(apiUrl, httpContent);
-                var responseContent = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
+                },
+                generationConfig = new
                 {
-                    _logger.LogError($"Gemini API returned error status: {response.StatusCode}");
-                    _logger.LogError($"Response: {responseContent}");
-                    throw new HttpRequestException($"Gemini API request failed with status {response.StatusCode}: {responseContent}");
+                    temperature = 0.7,
+                    maxOutputTokens = 4096,
+                    responseMimeType = "application/json"
                 }
+            };
 
-                _logger.LogInformation("Gemini API Response received successfully");
-                _logger.LogDebug($"Response: {responseContent}");
+            var jsonRequest = JsonSerializer.Serialize(requestBody);
+            _logger.LogDebug($"Gemini Request: {jsonRequest.Substring(0, Math.Min(500, jsonRequest.Length))}...");
 
-                // Parse the response to extract the text
-                var geminiResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
+            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(endpoint, content);
+            var responseText = await response.Content.ReadAsStringAsync();
 
-                if (geminiResponse.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
-                {
-                    var firstCandidate = candidates[0];
-                    if (firstCandidate.TryGetProperty("content", out var content))
-                    {
-                        if (content.TryGetProperty("parts", out var parts) && parts.GetArrayLength() > 0)
-                        {
-                            var firstPart = parts[0];
-                            if (firstPart.TryGetProperty("text", out var textElement))
-                            {
-                                var responseText = textElement.GetString();
-                                if (string.IsNullOrEmpty(responseText))
-                                {
-                                    throw new InvalidOperationException("Gemini API returned empty text response");
-                                }
-                                return responseText;
-                            }
-                        }
-                    }
-                }
+            _logger.LogDebug($"Gemini Response Status: {response.StatusCode}");
+            _logger.LogDebug($"Gemini Response (first 1000 chars): {responseText.Substring(0, Math.Min(1000, responseText.Length))}");
 
-                throw new InvalidOperationException("Gemini API response format is invalid or missing expected fields");
-            }
-            catch (Exception ex)
+            if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError(ex, "Error calling Gemini API");
-                throw;
+                _logger.LogError($"Gemini API error: {responseText}");
+                throw new HttpRequestException($"Gemini API returned {response.StatusCode}: {responseText}");
             }
-        }
 
-        private GeminiSprintPlanResponseDto ParseGeminiResponse(string responseText)
-        {
+            // Parse Gemini response
+            var geminiResponse = JsonSerializer.Deserialize<GeminiApiResponse>(responseText);
+
+            if (geminiResponse?.Candidates == null || !geminiResponse.Candidates.Any())
+            {
+                _logger.LogWarning("Gemini response has no candidates");
+                return new GeminiSprintPlanResponseDto();
+            }
+
+            var candidate = geminiResponse.Candidates.First();
+            if (candidate?.Content?.Parts == null || !candidate.Content.Parts.Any())
+            {
+                _logger.LogWarning("Gemini response has no content parts");
+                return new GeminiSprintPlanResponseDto();
+            }
+
+            var textResponse = candidate.Content.Parts.First().Text;
+
+            if (string.IsNullOrWhiteSpace(textResponse))
+            {
+                _logger.LogWarning("Gemini response text is empty");
+                return new GeminiSprintPlanResponseDto();
+            }
+
+            _logger.LogDebug($"Gemini text response: {textResponse}");
+
+            // Clean up the response (remove markdown code fences if present)
+            textResponse = CleanJsonResponse(textResponse);
+
             try
             {
-                // Try to extract JSON from markdown code blocks
-                var jsonMatch = Regex.Match(responseText, @"```json\s*([\s\S]*?)\s*```");
-                var jsonText = jsonMatch.Success ? jsonMatch.Groups[1].Value : responseText;
-
-                // Remove any leading/trailing whitespace
-                jsonText = jsonText.Trim();
-
-                var options = new JsonSerializerOptions
+                var sprintPlan = JsonSerializer.Deserialize<GeminiSprintPlanResponseDto>(textResponse, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                };
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                });
 
-                var response = JsonSerializer.Deserialize<GeminiSprintPlanResponseDto>(jsonText, options);
-
-                if (response == null || response.SprintPlan == null)
-                {
-                    throw new InvalidOperationException("Failed to parse Gemini response: response is null");
-                }
-
-                return response;
+                return sprintPlan ?? new GeminiSprintPlanResponseDto();
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, $"Failed to parse Gemini response as JSON. Response: {responseText}");
-                throw new InvalidOperationException("Failed to parse Gemini response as valid JSON", ex);
+                _logger.LogError(ex, $"Failed to parse Gemini JSON response: {textResponse}");
+                throw new InvalidOperationException($"Invalid JSON from Gemini: {ex.Message}");
             }
         }
 
-        private string BuildGeminiPrompt(SprintPlanningContextDto context)
+        private string CleanJsonResponse(string text)
         {
-            var contextJson = JsonSerializer.Serialize(context, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = true
-            });
+            // Remove markdown code fences
+            text = Regex.Replace(text, @"```json\s*", "", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"```\s*$", "", RegexOptions.IgnoreCase);
+            text = text.Trim();
+            return text;
+        }
 
-            var prompt = $@"# Sprint Planning AI Prompt (Send to Gemini)
+        private string BuildSprintPlanningPrompt(SprintPlanningContextDto context)
+        {
+            var prompt = new StringBuilder();
 
-You are an expert Agile sprint planner. Your task is to analyze the provided project context and create an optimal sprint plan by selecting appropriate issues from the backlog.
-
-## Context Provided
-You have been given:
-1. **Project Information**: Basic project details
-2. **New Sprint Parameters**: Name, goal, team, dates, and target story points
-3. **Backlog Issues**: All available issues that can be assigned to this sprint
-4. **Team Velocity Data**: Historical performance metrics, individual team member velocities, and trends
-5. **Current Sprint Load**: In-progress and planned sprints to avoid overloading the team
-
-## Your Objectives
-
-### Primary Goals
-1. **Capacity Planning**: Select issues that match the team's proven velocity without overloading
-2. **Priority Alignment**: Prioritize CRITICAL and HIGH priority issues
-3. **Sprint Goal Alignment**: Choose issues that support the sprint goal
-4. **Team Balance**: Distribute work appropriately across team members based on their historical performance
-5. **Dependency Management**: Consider parent-child issue relationships
-
-### Selection Criteria
-
-**MUST Consider:**
-- Team's average velocity from historical sprints
-- Individual team member completion rates and preferences
-- Issue priority levels (CRITICAL > HIGH > MEDIUM > LOW)
-- Story point estimates already assigned to issues
-- Current workload (in-progress and planned sprints)
-- Dependencies (parent_issue_id relationships)
-- Sprint goal alignment
-
-**MUST Avoid:**
-- Overloading team beyond historical velocity (target 85-95% of average velocity)
-- Selecting dependent issues without their parent issues
-- Ignoring critical/high priority issues in favor of low priority ones
-- Assigning more work to team members already heavily loaded in active sprints
-
-### Response Format
-
-Return ONLY a valid JSON object (no markdown, no explanations outside JSON) with this exact structure:
-
-```json
-{{
-  ""sprint_plan"": {{
-    ""selected_issues"": [
-      {{
-        ""issue_id"": ""uuid"",
-        ""issue_key"": ""string"",
-        ""story_points"": integer,
-        ""suggested_assignee_id"": integer or null,
-        ""rationale"": ""Brief explanation why this issue was selected""
-      }}
+            prompt.AppendLine("You are an expert Agile Sprint Planner AI. Your task is to create an optimal sprint plan based on the provided project data, backlog issues, team velocity, and constraints.");
+            prompt.AppendLine();
+            prompt.AppendLine("## CRITICAL OUTPUT REQUIREMENTS:");
+            prompt.AppendLine("1. You MUST return ONLY valid JSON - no explanatory text, no markdown formatting");
+            prompt.AppendLine("2. You MUST select at least 3-10 backlog issues for the sprint");
+            prompt.AppendLine("3. You MUST provide a non-empty summary and recommendations");
+            prompt.AppendLine("4. Your response must match this exact JSON structure:");
+            prompt.AppendLine(@"{
+  ""sprintPlan"": {
+    ""selectedIssues"": [
+      {
+        ""issueId"": ""uuid-string"",
+        ""issueKey"": ""string like PHX-201"",
+        ""storyPoints"": number,
+        ""suggestedAssigneeId"": number or null,
+        ""rationale"": ""brief explanation why this issue was selected""
+      }
     ],
-    ""total_story_points"": number,
-    ""summary"": ""2-3 paragraph summary explaining the overall sprint composition, how it aligns with the sprint goal, and why these issues were chosen together"",
+    ""totalStoryPoints"": number,
+    ""summary"": ""comprehensive summary of the sprint plan"",
     ""recommendations"": [
-      {{
+      {
         ""type"": ""capacity|priority|risk|dependency|team_balance"",
         ""severity"": ""info|warning|critical"",
-        ""message"": ""Specific recommendation or concern""
-      }}
+        ""message"": ""recommendation text""
+      }
     ],
-    ""capacity_analysis"": {{
-      ""team_capacity_utilization"": number (as percentage, e.g., 87.5),
-      ""estimated_completion_probability"": number (as percentage, e.g., 92),
-      ""risk_factors"": [""Array of specific risks identified in this sprint plan""]
-    }}
-  }}
-}}
-```
+    ""capacityAnalysis"": {
+      ""teamCapacityUtilization"": number (percentage),
+      ""estimatedCompletionProbability"": number (percentage),
+      ""riskFactors"": [""string""]
+    }
+  }
+}");
+            prompt.AppendLine();
+            prompt.AppendLine("## PROJECT CONTEXT:");
+            prompt.AppendLine($"- Project: {context.Project?.Name} ({context.Project?.Key})");
+            prompt.AppendLine($"- Sprint: {context.NewSprint?.Name}");
+            prompt.AppendLine($"- Sprint Goal: {context.NewSprint?.Goal ?? "Not specified"}");
+            prompt.AppendLine($"- Sprint Duration: {context.NewSprint?.StartDate:yyyy-MM-dd} to {context.NewSprint?.DueDate:yyyy-MM-dd}");
+            prompt.AppendLine($"- Target Story Points: {context.NewSprint?.TargetStoryPoints ?? 0}");
+            prompt.AppendLine();
 
-## Decision-Making Guidelines
+            // Team velocity information
+            if (context.TeamVelocity != null)
+            {
+                prompt.AppendLine("## TEAM VELOCITY:");
+                prompt.AppendLine($"- Team: {context.TeamVelocity.TeamName}");
+                prompt.AppendLine($"- Team Size: {context.TeamVelocity.MemberCount} members");
+                prompt.AppendLine($"- Average Velocity: {context.TeamVelocity.AverageVelocity:F2} story points per sprint");
+                prompt.AppendLine($"- Velocity Trend: {context.TeamVelocity.RecentVelocityTrend}");
 
-### When team velocity is high (consistent 90%+ completion):
-- Target 90-95% of average velocity
-- Include some stretch goals
-- Balance between different issue types
+                if (context.TeamVelocity.HistoricalSprints?.Any() == true)
+                {
+                    prompt.AppendLine($"- Recent Sprint Performance:");
+                    foreach (var sprint in context.TeamVelocity.HistoricalSprints.Take(5))
+                    {
+                        prompt.AppendLine($"  * {sprint.SprintName}: {sprint.CompletedPoints}/{sprint.PlannedPoints} points ({sprint.CompletionRate:F0}% completion)");
+                    }
+                }
+            }
+            prompt.AppendLine();
 
-### When team velocity is inconsistent or trending down:
-- Target 80-85% of average velocity
-- Focus on higher priority items only
-- Flag capacity concerns in recommendations
+            // Backlog issues
+            prompt.AppendLine("## AVAILABLE BACKLOG ISSUES:");
+            prompt.AppendLine($"Total backlog issues: {context.BacklogIssues?.Count ?? 0}");
 
-### When backlog has many CRITICAL items:
-- Prioritize these even if it means fewer total issues
-- Flag if critical items exceed team capacity
+            if (context.BacklogIssues?.Any() == true)
+            {
+                foreach (var issue in context.BacklogIssues.Take(50)) // Limit to avoid token limits
+                {
+                    prompt.AppendLine($"- {issue.Key}: \"{issue.Title}\"");
+                    prompt.AppendLine($"  * Type: {issue.Type}, Priority: {issue.Priority}");
+                    prompt.AppendLine($"  * Story Points: {issue.StoryPoints ?? 0}");
+                    if (issue.AssigneeId.HasValue)
+                    {
+                        prompt.AppendLine($"  * Assigned to: User ID {issue.AssigneeId}");
+                    }
+                    if (issue.Labels?.Any() == true)
+                    {
+                        prompt.AppendLine($"  * Labels: {string.Join(", ", issue.Labels)}");
+                    }
+                }
+            }
+            else
+            {
+                prompt.AppendLine("ERROR: No backlog issues available!");
+            }
+            prompt.AppendLine();
 
-### When dependencies exist:
-- Always include parent issues before subtasks
-- Group related issues in the same sprint when possible
-- Flag dependency chains in recommendations
+            // In-progress and planned sprints context
+            if (context.InProgressSprints?.Any() == true)
+            {
+                prompt.AppendLine("## IN-PROGRESS SPRINTS:");
+                foreach (var sprint in context.InProgressSprints)
+                {
+                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} allocated, {sprint.RemainingPoints} remaining");
+                }
+                prompt.AppendLine();
+            }
 
-### For team member assignments:
-- Match issue types to member preferences (if data available)
-- Consider current workload in active sprints
-- Distribute story points proportionally to individual velocities
-- Leave assignee as null if no clear match
+            // Planning constraints
+            prompt.AppendLine("## PLANNING CONSTRAINTS & RULES:");
+            prompt.AppendLine($"1. Total story points should be close to target ({context.NewSprint?.TargetStoryPoints ?? 0}) but NOT EXCEED average velocity + 20%");
+            prompt.AppendLine("2. Prioritize issues in this order: CRITICAL > HIGH > MEDIUM > LOW");
+            prompt.AppendLine("3. Balance story point distribution across team members");
+            prompt.AppendLine("4. Include a healthy mix of issue types: STORY, TASK, BUG");
+            prompt.AppendLine("5. Consider velocity trend:");
 
-## Important Rules
+            if (context.TeamVelocity?.RecentVelocityTrend == "decreasing")
+            {
+                prompt.AppendLine("   - Velocity is DECREASING → Reduce sprint load by 10-15%");
+            }
+            else if (context.TeamVelocity?.RecentVelocityTrend == "increasing")
+            {
+                prompt.AppendLine("   - Velocity is INCREASING → Can slightly increase sprint load");
+            }
+            else
+            {
+                prompt.AppendLine("   - Velocity is STABLE → Plan at average velocity level");
+            }
 
-1. **ONLY select issues from the provided backlog** - Never create new issues or reference issues not in the backlog
-2. **NEVER modify story points** - Use the story_points value exactly as provided in each issue
-3. **Stay within capacity** - Total selected story points should not exceed team's proven velocity significantly
-4. **Provide specific rationales** - Each issue should have a clear reason for selection
-5. **Be honest about risks** - If the sprint seems overloaded or high-risk, say so in recommendations
+            prompt.AppendLine("6. Assign issues to team members based on their historical performance");
+            prompt.AppendLine("7. Identify and flag any capacity or risk concerns");
+            prompt.AppendLine();
 
-## Context Data
+            prompt.AppendLine("## YOUR TASK:");
+            prompt.AppendLine("Analyze the data above and generate a sprint plan. Select the optimal set of backlog issues that:");
+            prompt.AppendLine("- Aligns with the team's velocity and capacity");
+            prompt.AppendLine("- Prioritizes high-value work");
+            prompt.AppendLine("- Balances workload across the team");
+            prompt.AppendLine("- Achieves the sprint goal");
+            prompt.AppendLine();
+            prompt.AppendLine("Return ONLY the JSON sprint plan - no additional text or explanations!");
 
-{contextJson}
+            return prompt.ToString();
+        }
 
-## Your Task
+        private GeminiSprintPlanResponseDto GenerateFallbackSprintPlan(SprintPlanningContextDto context)
+        {
+            _logger.LogInformation("Generating rule-based fallback sprint plan");
 
-Analyze the above context and create an optimal sprint plan. Return your response as a valid JSON object following the exact structure specified above.";
+            var targetPoints = context.NewSprint?.TargetStoryPoints ??
+                               (int)(context.TeamVelocity?.AverageVelocity ?? 0);
 
-            _logger.LogDebug($"Generated prompt for Gemini: {prompt}");
+            // Adjust target based on velocity trend
+            if (context.TeamVelocity?.RecentVelocityTrend == "decreasing")
+            {
+                targetPoints = (int)(targetPoints * 0.85m); // Reduce by 15%
+            }
 
-            return prompt;
+            // Priority order for sorting
+            var priorityOrder = new Dictionary<string, int>
+            {
+                { "CRITICAL", 1 },
+                { "HIGH", 2 },
+                { "MEDIUM", 3 },
+                { "LOW", 4 }
+            };
+
+            // Sort issues by priority and story points
+            var sortedIssues = context.BacklogIssues?
+                .OrderBy(i => priorityOrder.GetValueOrDefault(i.Priority?.ToUpper() ?? "MEDIUM", 3))
+                .ThenByDescending(i => i.StoryPoints ?? 0)
+                .ToList() ?? new List<BacklogIssueDto>();
+
+            var selectedIssues = new List<SelectedIssueDto>();
+            int totalPoints = 0;
+
+            // Select issues until we reach target
+            foreach (var issue in sortedIssues)
+            {
+                var issuePoints = issue.StoryPoints ?? 0;
+
+                if (totalPoints + issuePoints <= targetPoints || selectedIssues.Count < 3)
+                {
+                    selectedIssues.Add(new SelectedIssueDto
+                    {
+                        IssueId = issue.Id,
+                        IssueKey = issue.Key,
+                        StoryPoints = issuePoints,
+                        SuggestedAssigneeId = issue.AssigneeId,
+                        Rationale = $"{issue.Priority ?? "MEDIUM"} priority {issue.Type} issue selected for sprint"
+                    });
+                    totalPoints += issuePoints;
+                }
+
+                if (totalPoints >= targetPoints && selectedIssues.Count >= 5)
+                {
+                    break;
+                }
+            }
+
+            var utilizationPercent = targetPoints > 0 ? (decimal)totalPoints / targetPoints * 100 : 0;
+
+            // Build recommendations
+            var recommendations = new List<RecommendationDto>
+            {
+                new RecommendationDto
+                {
+                    Type = "priority",
+                    Severity = "info",
+                    Message = "This is a fallback plan generated using rule-based logic."
+                },
+                new RecommendationDto
+                {
+                    Type = "capacity",
+                    Severity = "info",
+                    Message = $"Team velocity trend is {context.TeamVelocity?.RecentVelocityTrend} - adjust future sprint planning accordingly."
+                }
+            };
+
+            // Count critical issues
+            var criticalCount = context.BacklogIssues?.Count(i => i.Priority == "CRITICAL" && selectedIssues.Any(s => s.IssueId == i.Id)) ?? 0;
+
+            if (criticalCount > 0)
+            {
+                recommendations.Add(new RecommendationDto
+                {
+                    Type = "priority",
+                    Severity = "warning",
+                    Message = "Sprint includes critical priority items - ensure adequate focus."
+                });
+            }
+            else
+            {
+                recommendations.Add(new RecommendationDto
+                {
+                    Type = "priority",
+                    Severity = "info",
+                    Message = "Consider including high-priority items for maximum value delivery."
+                });
+            }
+
+            if (utilizationPercent > 110)
+            {
+                recommendations.Add(new RecommendationDto
+                {
+                    Type = "capacity",
+                    Severity = "warning",
+                    Message = "⚠️ Sprint may be overloaded - consider removing low-priority items."
+                });
+            }
+            else if (utilizationPercent < 70)
+            {
+                recommendations.Add(new RecommendationDto
+                {
+                    Type = "capacity",
+                    Severity = "info",
+                    Message = "Sprint has capacity for additional work - consider adding more issues."
+                });
+            }
+            else
+            {
+                recommendations.Add(new RecommendationDto
+                {
+                    Type = "capacity",
+                    Severity = "info",
+                    Message = "Sprint capacity utilization is healthy."
+                });
+            }
+
+            // Build risk factors
+            var riskFactors = new List<string>();
+            if (context.TeamVelocity?.RecentVelocityTrend == "decreasing")
+            {
+                riskFactors.Add("Team velocity is decreasing");
+            }
+            if (utilizationPercent > 110)
+            {
+                riskFactors.Add("Sprint overloaded beyond team capacity");
+            }
+            if (criticalCount > 3)
+            {
+                riskFactors.Add("High number of critical priority items");
+            }
+
+            return new GeminiSprintPlanResponseDto
+            {
+                SprintPlan = new SprintPlanDto
+                {
+                    SelectedIssues = selectedIssues,
+                    TotalStoryPoints = totalPoints,
+                    Summary = $"Rule-based sprint plan generated with {selectedIssues.Count} issues totaling {totalPoints} story points. " +
+                             $"Target was {targetPoints} points (Team velocity: {context.TeamVelocity?.AverageVelocity:F1}, Trend: {context.TeamVelocity?.RecentVelocityTrend}).",
+                    Recommendations = recommendations,
+                    CapacityAnalysis = new CapacityAnalysisDto
+                    {
+                        TeamCapacityUtilization = (int)utilizationPercent,
+                        EstimatedCompletionProbability = Math.Min(95, 100 - Math.Abs((int)(utilizationPercent - 90))),
+                        RiskFactors = riskFactors
+                    }
+                }
+            };
+        }
+
+        // Internal classes for Gemini API response parsing
+        private class GeminiApiResponse
+        {
+            [JsonPropertyName("candidates")]
+            public List<Candidate>? Candidates { get; set; }
+        }
+
+        private class Candidate
+        {
+            [JsonPropertyName("content")]
+            public Content? Content { get; set; }
+        }
+
+        private class Content
+        {
+            [JsonPropertyName("parts")]
+            public List<Part>? Parts { get; set; }
+        }
+
+        private class Part
+        {
+            [JsonPropertyName("text")]
+            public string? Text { get; set; }
         }
     }
 }

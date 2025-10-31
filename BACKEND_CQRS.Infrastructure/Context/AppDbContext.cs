@@ -31,8 +31,22 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<Status> Statuses { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; } // ✅ Added RefreshToken
 
-        public DbSet<Epic> Epic { get; set; }   
+        public DbSet<Epic> Epic { get; set; }
 
         public DbSet<Role> Roles { get; set; }
+
+        public DbSet<DeliveryUnit> DeliveryUnits { get; set; }
+        public DbSet<ProjectStatus> ProjectStatuses { get; set; }
+        public DbSet<ProjectTemplate> ProjectTemplates { get; set; }
+        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<RolePermission> RolePermissions { get; set; }
+        public DbSet<ImportJob> ImportJobs { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<IssueComment> IssueComments { get; set; }
+        public DbSet<Mention> Mentions { get; set; }
+        public DbSet<CustomField> CustomFields { get; set; }
+        public DbSet<JiraAuthorization> JiraAuthorizations { get; set; }
+        public DbSet<StarredProjects> StarredProjects { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
     }
 }

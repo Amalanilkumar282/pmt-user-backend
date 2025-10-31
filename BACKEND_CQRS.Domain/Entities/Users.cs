@@ -50,10 +50,10 @@ namespace BACKEND_CQRS.Domain.Entities
         public DateTimeOffset? DeletedAt { get; set; }
 
         [Column("jira_id")]
-        public string JiraId { get; set; }
+        public string? JiraId { get; set; }
 
         [Column("type")]
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         public ICollection<ProjectMembers> ProjectMembers { get; set; }
     }
