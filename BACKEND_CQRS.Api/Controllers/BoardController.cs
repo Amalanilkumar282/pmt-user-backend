@@ -636,5 +636,84 @@ namespace BACKEND_CQRS.Api.Controllers
                         "An unexpected error occurred while updating the board. Please contact support if the issue persists."));
             }
         }
+
+        /// <summary>
+        /// Get a single board by its ID with all related data and columns
+        /// </summary>
+        /// <param name="boardId">The board ID</param>
+        /// <param name="includeInactive">Optional: Include inactive boards (default: false)</param>
+        /// <returns>Board details with columns</returns>
+        /// <response code="200">Returns the board details with all related information</response>
+        /// <response code="400">If the board ID is invalid</response>
+        /// <response code="404">If the board does not exist or is inactive</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET /api/board/1
+        ///     
+        /// Sample request to include inactive boards:
+        /// 
+        ///     GET /api/board/1?includeInactive=true
+        /// 
+        /// This endpoint returns complete board information including:
+        /// - Board details (name, description, type, metadata)
+        /// - Project information (ID, name)
+        /// - Team information (ID, name) if applicable
+        /// - Creator and updater information
+        /// - All board columns ordered by position with status information
+        /// - Timestamps (created, updated)
+        /// </remarks>
+        [HttpGet("{boardId:int}")]
+        [ProducesResponseType(typeof(ApiResponse<BoardWithColumnsDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<BoardWithColumnsDto>>> GetBoardById(
+            int boardId,
+            [FromQuery] bool includeInactive = false)
+        {
+            try
+            {
+                // Validate input
+                if (boardId <= 0)
+                {
+                    _logger.LogWarning("Invalid board ID provided: {BoardId}", boardId);
+                    return BadRequest(ApiResponse<object>.Fail("Invalid board ID. Board ID must be greater than 0."));
+                }
+
+                _logger.LogInformation("API request received to fetch board: {BoardId}. IncludeInactive: {IncludeInactive}", 
+                    boardId, includeInactive);
+
+                var result = await _mediator.Send(new GetBoardByIdQuery(boardId, includeInactive));
+
+                if (result == null)
+                {
+                    _logger.LogWarning("Board {BoardId} not found or is inactive", boardId);
+                    return NotFound(ApiResponse<object>.Fail(
+                        $"Board with ID {boardId} does not exist or is inactive"));
+                }
+
+                var message = $"Successfully fetched board '{result.Name}' with {result.Columns.Count} column(s)";
+
+                return Ok(ApiResponse<BoardWithColumnsDto>.Success(result, message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Database operation failed
+                _logger.LogError(ex, "Database operation failed for board: {BoardId}", boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.Fail("A database error occurred while fetching the board. Please try again later."));
+            }
+            catch (Exception ex)
+            {
+                // Unexpected error
+                _logger.LogError(ex, "Unexpected error occurred in BoardController.GetBoardById for board: {BoardId}", boardId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<object>.Fail("An unexpected error occurred while fetching the board. Please contact support if the issue persists."));
+            }
+        }
     }
 }

@@ -10,6 +10,11 @@ namespace BACKEND_CQRS.Domain.Persistance
         Task<List<Board>> GetBoardsByProjectIdWithColumnsAsync(Guid projectId);
 
         /// <summary>
+        /// Get a single board by ID with all related data (project, team, columns, etc.)
+        /// </summary>
+        Task<Board?> GetBoardByIdWithColumnsAsync(int boardId, bool includeInactive = false);
+
+        /// <summary>
         /// Check if a board exists and is active
         /// </summary>
         Task<bool> BoardExistsAsync(int boardId);

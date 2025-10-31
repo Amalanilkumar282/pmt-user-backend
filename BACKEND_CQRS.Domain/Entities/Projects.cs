@@ -18,28 +18,28 @@ namespace BACKEND_CQRS.Domain.Entities
 
         [Column("name")]
         [Required]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [Column("key")]
-        public string Key { get; set; }
+        public string? Key { get; set; }
 
         [Column("description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [Column("customer_org_name")]
-        public string CustomerOrgName { get; set; }
+        public string? CustomerOrgName { get; set; }
 
         [Column("customer_domain_url")]
-        public string CustomerDomainUrl { get; set; }
-
+        public string? CustomerDomainUrl { get; set; }
+            
         [Column("customer_description")]
-        public string CustomerDescription { get; set; }
+        public string? CustomerDescription { get; set; }
 
         [Column("poc_email")]
-        public string PocEmail { get; set; }
+        public string? PocEmail { get; set; }
 
         [Column("poc_phone")]
-        public string PocPhone { get; set; }
+        public string? PocPhone { get; set; }
 
         [Column("project_manager_id")]
         public int? ProjectManagerId { get; set; }
