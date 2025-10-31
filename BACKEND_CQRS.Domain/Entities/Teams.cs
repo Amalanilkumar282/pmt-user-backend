@@ -70,6 +70,11 @@ namespace BACKEND_CQRS.Domain.Entities
 
          //✅ Add this navigation property
         public ICollection<TeamMember> TeamMembers { get; set; } = new List<TeamMember>();
+
+
+        public ICollection<Board> Boards { get; set; }
+        public ICollection<ProjectMembers> ProjectMembers { get; set; }
+        public ICollection<Channel> Channels { get; set; }
     }
 }
 
