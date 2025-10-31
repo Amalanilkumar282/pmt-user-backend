@@ -45,7 +45,7 @@ namespace BACKEND_CQRS.Domain.Entities
         public Role? Role { get; set; }
 
         [ForeignKey("AddedBy")]
-        public Users? Users { get; set; }
+        public Users? AddedByUser { get; set; }
 
 
 
