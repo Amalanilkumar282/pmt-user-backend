@@ -60,16 +60,16 @@ namespace BACKEND_CQRS.Domain.Entities
         public int? UpdatedBy { get; set; }
 
         [Column("created_at")]
-        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }        //    change to DateTime
 
         [Column("updated_at")]
-        public DateTimeOffset? UpdatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }   //change to DateTime
 
         [Column("metadata", TypeName = "jsonb")]
         public string Metadata { get; set; }
 
         [Column("deleted_at")]
-        public DateTimeOffset? DeletedAt { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; } //change to DateTime
 
         [Column("isimportedfromjira")]
         public bool? IsImportedFromJira { get; set; }
@@ -81,6 +81,9 @@ namespace BACKEND_CQRS.Domain.Entities
         // Using ForeignKey attribute to map to project_manager_role_id column
         [ForeignKey("ProjectManagerRoleId")]
         public Role ProjectManagerRole { get; set; }
+
+
+        // ForeignKey 
     }
 }
 
