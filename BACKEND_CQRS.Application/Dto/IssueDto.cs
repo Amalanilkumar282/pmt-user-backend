@@ -14,9 +14,9 @@ namespace BACKEND_CQRS.Application.Dto
         [Required]
         public string Title { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
-        public string Priority { get; set; }
+        public string? Priority { get; set; }
 
         public int? AssigneeId { get; set; }
 
@@ -34,5 +34,7 @@ namespace BACKEND_CQRS.Application.Dto
         public int ReporterId { get; set; }
 
         public string? AttachmentUrl { get; set; }
+
+        public string? Labels { get; set; } // Stores labels as JSON string
     }
 }
