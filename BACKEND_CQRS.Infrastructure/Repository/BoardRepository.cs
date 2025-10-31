@@ -143,6 +143,64 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             }
         }
 
+        public async Task<Board?> GetBoardByIdWithColumnsAsync(int boardId, bool includeInactive = false)
+        {
+            try
+            {
+                _logger?.LogInformation("Fetching board {BoardId} with columns. IncludeInactive: {IncludeInactive}", 
+                    boardId, includeInactive);
+
+                // Step 1: Fetch the board with navigation properties
+                var boardQuery = _context.Boards
+                    .Include(b => b.Project)
+                    .Include(b => b.Team)
+                    .Include(b => b.Creator)
+                    .Include(b => b.Updater)
+                    .Where(b => b.Id == boardId);
+
+                // Apply active filter if needed
+                if (!includeInactive)
+                {
+                    boardQuery = boardQuery.Where(b => b.IsActive);
+                }
+
+                var board = await boardQuery
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync();
+
+                if (board == null)
+                {
+                    _logger?.LogWarning("Board {BoardId} not found or is inactive", boardId);
+                    return null;
+                }
+
+                // Step 2: Fetch board columns with status information
+                var columns = await _context.BoardBoardColumnMaps
+                    .Where(m => m.BoardId == boardId)
+                    .Include(m => m.BoardColumn)
+                        .ThenInclude(bc => bc!.Status)
+                    .Select(m => m.BoardColumn!)
+                    .Where(bc => bc != null)
+                    .OrderBy(bc => bc.Position ?? int.MaxValue)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                // Step 3: Assign columns to the board
+                board.BoardColumns = columns;
+
+                _logger?.LogInformation("Successfully fetched board {BoardId} with {ColumnCount} columns", 
+                    boardId, columns.Count);
+
+                return board;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error fetching board {BoardId} with columns", boardId);
+                throw new InvalidOperationException(
+                    $"An error occurred while fetching board with columns. See inner exception for details.", ex);
+            }
+        }
+
         public async Task<bool> SoftDeleteBoardAsync(int boardId, int? deletedBy = null)
         {
             try
