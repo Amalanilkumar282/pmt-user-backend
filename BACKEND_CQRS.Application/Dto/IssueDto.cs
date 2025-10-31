@@ -39,7 +39,5 @@ namespace BACKEND_CQRS.Application.Dto
         public int ReporterId { get; set; }
         public string? Labels { get; set; }
         public string? AttachmentUrl { get; set; }
-
-        public string? Labels { get; set; } // Stores labels as JSON string
     }
 }
