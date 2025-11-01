@@ -1,8 +1,6 @@
 ﻿using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
-using System;
-using System.Collections.Generic;
 
 namespace BACKEND_CQRS.Application.Command
 {
@@ -14,7 +12,7 @@ namespace BACKEND_CQRS.Application.Command
         public DateTime? StartDate { get; set; }
         public DateTime? DueDate { get; set; }
         public int? AssigneeId { get; set; }
-        public int ReporterId { get; set; }
+        public int? ReporterId { get; set; }
         public List<string>? Labels { get; set; }
     }
 }
