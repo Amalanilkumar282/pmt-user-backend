@@ -348,11 +348,8 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             {
                 _logger?.LogInformation("Updating board {BoardId}", boardId);
 
+                // Fetch the existing board without problematic includes
                 var existingBoard = await _context.Boards
-                    .Include(b => b.Project)
-                    .Include(b => b.Team)
-                    .Include(b => b.Creator)
-                    .Include(b => b.Updater)
                     .FirstOrDefaultAsync(b => b.Id == boardId);
 
                 if (existingBoard == null)
@@ -423,10 +420,39 @@ namespace BACKEND_CQRS.Infrastructure.Repository
 
                     _logger?.LogInformation("Successfully updated board {BoardId}", boardId);
 
-                    // Reload navigation properties
-                    await _context.Entry(existingBoard).Reference(b => b.Project).LoadAsync();
-                    await _context.Entry(existingBoard).Reference(b => b.Team).LoadAsync();
-                    await _context.Entry(existingBoard).Reference(b => b.Updater).LoadAsync();
+                    // Reload with safe Select to populate navigation properties for return
+                    var boardData = await _context.Boards
+                        .Where(b => b.Id == boardId)
+                        .Select(b => new
+                        {
+                            Board = b,
+                            ProjectId = b.ProjectId,
+                            ProjectName = b.Project != null ? b.Project.Name : null,
+                            TeamId = b.TeamId,
+                            TeamName = b.Team != null ? b.Team.Name : null,
+                            UpdatedById = b.UpdatedBy,
+                            UpdatedByName = b.Updater != null ? b.Updater.Name : null
+                        })
+                        .FirstOrDefaultAsync();
+
+                    if (boardData != null)
+                    {
+                        // Manually populate navigation properties
+                        if (boardData.ProjectId != Guid.Empty && !string.IsNullOrEmpty(boardData.ProjectName))
+                        {
+                            existingBoard.Project = new Projects { Id = boardData.ProjectId, Name = boardData.ProjectName };
+                        }
+                        
+                        if (boardData.TeamId.HasValue && !string.IsNullOrEmpty(boardData.TeamName))
+                        {
+                            existingBoard.Team = new Teams { Id = boardData.TeamId.Value, Name = boardData.TeamName };
+                        }
+                        
+                        if (boardData.UpdatedById.HasValue && !string.IsNullOrEmpty(boardData.UpdatedByName))
+                        {
+                            existingBoard.Updater = new Users { Id = boardData.UpdatedById.Value, Name = boardData.UpdatedByName };
+                        }
+                    }
                 }
                 else
                 {
