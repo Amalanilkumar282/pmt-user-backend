@@ -33,27 +33,63 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                     throw new KeyNotFoundException($"Project with ID {projectId} does not exist");
                 }
 
-                // Step 2: Fetch boards with navigation properties using a single efficient query
-                // This avoids the N+1 problem by using a single query with joins
-                var boards = await _context.Boards
+                // Step 2: Fetch boards with only the necessary data to avoid Teams.ProjectMembers issue
+                var boardsData = await _context.Boards
                     .Where(b => b.ProjectId == projectId && b.IsActive)
-                    .Include(b => b.Project)
-                    .Include(b => b.Team)
-                    .Include(b => b.Creator)
-                    .Include(b => b.Updater)
+                    .Select(b => new
+                    {
+                        Board = b,
+                        ProjectId = b.ProjectId,
+                        ProjectName = b.Project != null ? b.Project.Name : null,
+                        TeamId = b.TeamId,
+                        TeamName = b.Team != null ? b.Team.Name : null,
+                        CreatedById = b.CreatedBy,
+                        CreatedByName = b.Creator != null ? b.Creator.Name : null,
+                        UpdatedById = b.UpdatedBy,
+                        UpdatedByName = b.Updater != null ? b.Updater.Name : null
+                    })
                     .AsNoTracking()
                     .ToListAsync();
 
-                if (boards == null || boards.Count == 0)
+                if (boardsData == null || boardsData.Count == 0)
                 {
                     _logger?.LogInformation("No active boards found for project {ProjectId}", projectId);
                     return new List<Board>();
                 }
 
-                // Step 3: Get all board IDs to fetch columns in a single query
-                var boardIds = boards.Select(b => b.Id).ToList();
+                // Step 3: Extract the board entities and manually populate navigation properties
+                var boardEntities = boardsData.Select(data =>
+                {
+                    var board = data.Board;
+                    
+                    // Manually create navigation objects with only the data we need
+                    if (data.ProjectId != Guid.Empty && !string.IsNullOrEmpty(data.ProjectName))
+                    {
+                        board.Project = new Projects { Id = data.ProjectId, Name = data.ProjectName };
+                    }
+                    
+                    if (data.TeamId.HasValue && !string.IsNullOrEmpty(data.TeamName))
+                    {
+                        board.Team = new Teams { Id = data.TeamId.Value, Name = data.TeamName };
+                    }
+                    
+                    if (data.CreatedById.HasValue && !string.IsNullOrEmpty(data.CreatedByName))
+                    {
+                        board.Creator = new Users { Id = data.CreatedById.Value, Name = data.CreatedByName };
+                    }
+                    
+                    if (data.UpdatedById.HasValue && !string.IsNullOrEmpty(data.UpdatedByName))
+                    {
+                        board.Updater = new Users { Id = data.UpdatedById.Value, Name = data.UpdatedByName };
+                    }
+                    
+                    return board;
+                }).ToList();
 
-                // Step 4: Fetch all board-column mappings with columns in ONE query
+                // Step 4: Get all board IDs to fetch columns in a single query
+                var boardIds = boardEntities.Select(b => b.Id).ToList();
+
+                // Step 5: Fetch all board-column mappings with columns in ONE query
                 var boardColumnMappings = await _context.BoardBoardColumnMaps
                     .Where(m => boardIds.Contains(m.BoardId!.Value))
                     .Include(m => m.BoardColumn)
@@ -61,7 +97,7 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                     .AsNoTracking()
                     .ToListAsync();
 
-                // Step 5: Group columns by board ID and assign to boards
+                // Step 6: Group columns by board ID and assign to boards
                 var columnsGroupedByBoard = boardColumnMappings
                     .Where(m => m.BoardColumn != null) // Filter out null columns
                     .GroupBy(m => m.BoardId)
@@ -72,8 +108,8 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                               .ToList()
                     );
 
-                // Step 6: Assign columns to each board
-                foreach (var board in boards)
+                // Step 7: Assign columns to each board
+                foreach (var board in boardEntities)
                 {
                     board.BoardColumns = columnsGroupedByBoard.TryGetValue(board.Id, out var columns)
                         ? columns
@@ -81,9 +117,9 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                 }
 
                 _logger?.LogInformation("Successfully fetched {BoardCount} boards with columns for project {ProjectId}", 
-                    boards.Count, projectId);
+                    boardEntities.Count, projectId);
 
-                return boards;
+                return boardEntities;
             }
             catch (KeyNotFoundException)
             {
@@ -118,21 +154,53 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             {
                 _logger?.LogInformation("Fetching board {BoardId}", boardId);
 
-                var board = await _context.Boards
-                    .Include(b => b.Project)
-                    .Include(b => b.Team)
-                    .Include(b => b.Creator)
-                    .Include(b => b.Updater)
-                    .FirstOrDefaultAsync(b => b.Id == boardId);
+                // Fetch board with only necessary data to avoid Teams.ProjectMembers issue
+                var boardData = await _context.Boards
+                    .Where(b => b.Id == boardId)
+                    .Select(b => new
+                    {
+                        Board = b,
+                        ProjectId = b.ProjectId,
+                        ProjectName = b.Project != null ? b.Project.Name : null,
+                        TeamId = b.TeamId,
+                        TeamName = b.Team != null ? b.Team.Name : null,
+                        CreatedById = b.CreatedBy,
+                        CreatedByName = b.Creator != null ? b.Creator.Name : null,
+                        UpdatedById = b.UpdatedBy,
+                        UpdatedByName = b.Updater != null ? b.Updater.Name : null
+                    })
+                    .FirstOrDefaultAsync();
 
-                if (board != null)
-                {
-                    _logger?.LogInformation("Found board {BoardId}, IsActive: {IsActive}", boardId, board.IsActive);
-                }
-                else
+                if (boardData == null)
                 {
                     _logger?.LogWarning("Board {BoardId} not found", boardId);
+                    return null;
                 }
+
+                var board = boardData.Board;
+                
+                // Manually populate navigation properties
+                if (boardData.ProjectId != Guid.Empty && !string.IsNullOrEmpty(boardData.ProjectName))
+                {
+                    board.Project = new Projects { Id = boardData.ProjectId, Name = boardData.ProjectName };
+                }
+                
+                if (boardData.TeamId.HasValue && !string.IsNullOrEmpty(boardData.TeamName))
+                {
+                    board.Team = new Teams { Id = boardData.TeamId.Value, Name = boardData.TeamName };
+                }
+                
+                if (boardData.CreatedById.HasValue && !string.IsNullOrEmpty(boardData.CreatedByName))
+                {
+                    board.Creator = new Users { Id = boardData.CreatedById.Value, Name = boardData.CreatedByName };
+                }
+                
+                if (boardData.UpdatedById.HasValue && !string.IsNullOrEmpty(boardData.UpdatedByName))
+                {
+                    board.Updater = new Users { Id = boardData.UpdatedById.Value, Name = boardData.UpdatedByName };
+                }
+
+                _logger?.LogInformation("Found board {BoardId}, IsActive: {IsActive}", boardId, board.IsActive);
 
                 return board;
             }
@@ -150,12 +218,8 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                 _logger?.LogInformation("Fetching board {BoardId} with columns. IncludeInactive: {IncludeInactive}", 
                     boardId, includeInactive);
 
-                // Step 1: Fetch the board with navigation properties
+                // Step 1: Fetch the board with only necessary data to avoid Teams.ProjectMembers issue
                 var boardQuery = _context.Boards
-                    .Include(b => b.Project)
-                    .Include(b => b.Team)
-                    .Include(b => b.Creator)
-                    .Include(b => b.Updater)
                     .Where(b => b.Id == boardId);
 
                 // Apply active filter if needed
@@ -164,14 +228,49 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                     boardQuery = boardQuery.Where(b => b.IsActive);
                 }
 
-                var board = await boardQuery
+                var boardData = await boardQuery
+                    .Select(b => new
+                    {
+                        Board = b,
+                        ProjectId = b.ProjectId,
+                        ProjectName = b.Project != null ? b.Project.Name : null,
+                        TeamId = b.TeamId,
+                        TeamName = b.Team != null ? b.Team.Name : null,
+                        CreatedById = b.CreatedBy,
+                        CreatedByName = b.Creator != null ? b.Creator.Name : null,
+                        UpdatedById = b.UpdatedBy,
+                        UpdatedByName = b.Updater != null ? b.Updater.Name : null
+                    })
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
 
-                if (board == null)
+                if (boardData == null)
                 {
                     _logger?.LogWarning("Board {BoardId} not found or is inactive", boardId);
                     return null;
+                }
+
+                var board = boardData.Board;
+                
+                // Manually populate navigation properties with only the data we need
+                if (boardData.ProjectId != Guid.Empty && !string.IsNullOrEmpty(boardData.ProjectName))
+                {
+                    board.Project = new Projects { Id = boardData.ProjectId, Name = boardData.ProjectName };
+                }
+                
+                if (boardData.TeamId.HasValue && !string.IsNullOrEmpty(boardData.TeamName))
+                {
+                    board.Team = new Teams { Id = boardData.TeamId.Value, Name = boardData.TeamName };
+                }
+                
+                if (boardData.CreatedById.HasValue && !string.IsNullOrEmpty(boardData.CreatedByName))
+                {
+                    board.Creator = new Users { Id = boardData.CreatedById.Value, Name = boardData.CreatedByName };
+                }
+                
+                if (boardData.UpdatedById.HasValue && !string.IsNullOrEmpty(boardData.UpdatedByName))
+                {
+                    board.Updater = new Users { Id = boardData.UpdatedById.Value, Name = boardData.UpdatedByName };
                 }
 
                 // Step 2: Fetch board columns with status information
@@ -249,11 +348,8 @@ namespace BACKEND_CQRS.Infrastructure.Repository
             {
                 _logger?.LogInformation("Updating board {BoardId}", boardId);
 
+                // Fetch the existing board without problematic includes
                 var existingBoard = await _context.Boards
-                    .Include(b => b.Project)
-                    .Include(b => b.Team)
-                    .Include(b => b.Creator)
-                    .Include(b => b.Updater)
                     .FirstOrDefaultAsync(b => b.Id == boardId);
 
                 if (existingBoard == null)
@@ -324,10 +420,39 @@ namespace BACKEND_CQRS.Infrastructure.Repository
 
                     _logger?.LogInformation("Successfully updated board {BoardId}", boardId);
 
-                    // Reload navigation properties
-                    await _context.Entry(existingBoard).Reference(b => b.Project).LoadAsync();
-                    await _context.Entry(existingBoard).Reference(b => b.Team).LoadAsync();
-                    await _context.Entry(existingBoard).Reference(b => b.Updater).LoadAsync();
+                    // Reload with safe Select to populate navigation properties for return
+                    var boardData = await _context.Boards
+                        .Where(b => b.Id == boardId)
+                        .Select(b => new
+                        {
+                            Board = b,
+                            ProjectId = b.ProjectId,
+                            ProjectName = b.Project != null ? b.Project.Name : null,
+                            TeamId = b.TeamId,
+                            TeamName = b.Team != null ? b.Team.Name : null,
+                            UpdatedById = b.UpdatedBy,
+                            UpdatedByName = b.Updater != null ? b.Updater.Name : null
+                        })
+                        .FirstOrDefaultAsync();
+
+                    if (boardData != null)
+                    {
+                        // Manually populate navigation properties
+                        if (boardData.ProjectId != Guid.Empty && !string.IsNullOrEmpty(boardData.ProjectName))
+                        {
+                            existingBoard.Project = new Projects { Id = boardData.ProjectId, Name = boardData.ProjectName };
+                        }
+                        
+                        if (boardData.TeamId.HasValue && !string.IsNullOrEmpty(boardData.TeamName))
+                        {
+                            existingBoard.Team = new Teams { Id = boardData.TeamId.Value, Name = boardData.TeamName };
+                        }
+                        
+                        if (boardData.UpdatedById.HasValue && !string.IsNullOrEmpty(boardData.UpdatedByName))
+                        {
+                            existingBoard.Updater = new Users { Id = boardData.UpdatedById.Value, Name = boardData.UpdatedByName };
+                        }
+                    }
                 }
                 else
                 {
