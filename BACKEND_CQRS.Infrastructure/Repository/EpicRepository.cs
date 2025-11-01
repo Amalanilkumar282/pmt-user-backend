@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BACKEND_CQRS.Infrastructure.Repository
 {
-    public class EpicRepository : IEpicRepository
+    public class EpicRepository : GenericRepository<Epic>, IEpicRepository
     {
         private readonly AppDbContext _context;
 
-        public EpicRepository(AppDbContext context)
+        public EpicRepository(AppDbContext context) : base(context)
         {
             _context = context;
         }
@@ -26,6 +26,16 @@ namespace BACKEND_CQRS.Infrastructure.Repository
                 .ToListAsync();
         }
 
+        public async Task<Epic?> GetEpicByIdAsync(Guid epicId)
+        {
+            return await _context.Epic
+                .Include(e => e.Assignee)
+                .Include(e => e.Reporter)
+                .Include(e => e.Project)
+                .Where(e => e.Id == epicId)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+        }
 
     }
 }
