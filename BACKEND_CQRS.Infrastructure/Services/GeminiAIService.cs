@@ -56,11 +56,39 @@ namespace BACKEND_CQRS.Infrastructure.Services
                         response.SprintPlan.SelectedIssues != null &&
                         response.SprintPlan.SelectedIssues.Any())
                     {
-                        _logger.LogInformation($"Successfully generated sprint plan with {response.SprintPlan.SelectedIssues.Count} issues");
-                        return response;
-                    }
+                        // Validate that all returned issue IDs exist in the backlog
+                        var backlogIssueIds = context.BacklogIssues?.Select(i => i.Id).ToHashSet() ?? new HashSet<Guid>();
+                        var invalidIssues = response.SprintPlan.SelectedIssues
+                            .Where(si => !backlogIssueIds.Contains(si.IssueId))
+                            .ToList();
 
-                    _logger.LogWarning($"Gemini returned empty sprint plan (attempt {attempt}/{MAX_RETRIES})");
+                        if (invalidIssues.Any())
+                        {
+                            _logger.LogWarning($"Gemini returned {invalidIssues.Count} issues with IDs not in backlog: {string.Join(", ", invalidIssues.Select(i => i.IssueId))}");
+                            // Remove invalid issues from the response
+                            response.SprintPlan.SelectedIssues = response.SprintPlan.SelectedIssues
+                                .Where(si => backlogIssueIds.Contains(si.IssueId))
+                                .ToList();
+
+                            // Recalculate total story points
+                            response.SprintPlan.TotalStoryPoints = response.SprintPlan.SelectedIssues.Sum(i => i.StoryPoints);
+                        }
+
+                        if (response.SprintPlan.SelectedIssues.Any())
+                        {
+                            _logger.LogInformation($"Successfully generated sprint plan with {response.SprintPlan.SelectedIssues.Count} valid issues");
+                            _logger.LogDebug($"Selected issue IDs: {string.Join(", ", response.SprintPlan.SelectedIssues.Select(i => i.IssueId))}");
+                            return response;
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"All selected issues had invalid IDs (attempt {attempt}/{MAX_RETRIES})");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"Gemini returned empty sprint plan (attempt {attempt}/{MAX_RETRIES})");
+                    }
 
                     if (attempt < MAX_RETRIES)
                     {
@@ -88,7 +116,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
 
         private async Task<GeminiSprintPlanResponseDto> CallGeminiAPIAsync(string apiKey, string prompt)
         {
-            var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+            var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={apiKey}";
 
             var requestBody = new
             {
@@ -111,11 +139,28 @@ namespace BACKEND_CQRS.Infrastructure.Services
             };
 
             var jsonRequest = JsonSerializer.Serialize(requestBody);
+
+            // Log the COMPLETE JSON request being sent to Gemini
+            _logger.LogInformation($"===== COMPLETE GEMINI API REQUEST =====");
+            _logger.LogInformation($"{jsonRequest}");
+            _logger.LogInformation($"===== END GEMINI REQUEST =====");
+
+            // Also log just the prompt text for easy review
+            _logger.LogInformation($"===== PROMPT TEXT ONLY =====");
+            _logger.LogInformation($"{prompt}");
+            _logger.LogInformation($"===== END PROMPT =====");
+
+            // Keep debug log for backward compatibility (truncated)
             _logger.LogDebug($"Gemini Request: {jsonRequest.Substring(0, Math.Min(500, jsonRequest.Length))}...");
 
             var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync(endpoint, content);
             var responseText = await response.Content.ReadAsStringAsync();
+
+            _logger.LogInformation($"===== COMPLETE GEMINI API RESPONSE =====");
+            _logger.LogInformation($"Status Code: {response.StatusCode}");
+            _logger.LogInformation($"Response Body: {responseText}");
+            _logger.LogInformation($"===== END GEMINI RESPONSE =====");
 
             _logger.LogDebug($"Gemini Response Status: {response.StatusCode}");
             _logger.LogDebug($"Gemini Response (first 1000 chars): {responseText.Substring(0, Math.Min(1000, responseText.Length))}");
@@ -191,12 +236,13 @@ namespace BACKEND_CQRS.Infrastructure.Services
             prompt.AppendLine("1. You MUST return ONLY valid JSON - no explanatory text, no markdown formatting");
             prompt.AppendLine("2. You MUST select at least 3-10 backlog issues for the sprint");
             prompt.AppendLine("3. You MUST provide a non-empty summary and recommendations");
-            prompt.AppendLine("4. Your response must match this exact JSON structure:");
+            prompt.AppendLine("4. For each selected issue, the 'issueId' field MUST be the exact UUID from the backlog issue list");
+            prompt.AppendLine("5. Your response must match this exact JSON structure:");
             prompt.AppendLine(@"{
   ""sprintPlan"": {
     ""selectedIssues"": [
       {
-        ""issueId"": ""uuid-string"",
+        ""issueId"": ""exact-uuid-from-backlog-list"",
         ""issueKey"": ""string like PHX-201"",
         ""storyPoints"": number,
         ""suggestedAssigneeId"": number or null,
@@ -251,12 +297,19 @@ namespace BACKEND_CQRS.Infrastructure.Services
             // Backlog issues
             prompt.AppendLine("## AVAILABLE BACKLOG ISSUES:");
             prompt.AppendLine($"Total backlog issues: {context.BacklogIssues?.Count ?? 0}");
+            prompt.AppendLine();
+            prompt.AppendLine("IMPORTANT: Each issue has a unique 'id' field. When you return the list of issues to be included in the sprint,");
+            prompt.AppendLine("you MUST include this exact same 'id' for each selected issue. Do NOT alter, regenerate, or modify these IDs.");
+            prompt.AppendLine("The 'issueId' in your response must exactly match the 'id' from this list.");
+            prompt.AppendLine();
 
             if (context.BacklogIssues?.Any() == true)
             {
                 foreach (var issue in context.BacklogIssues.Take(50)) // Limit to avoid token limits
                 {
-                    prompt.AppendLine($"- {issue.Key}: \"{issue.Title}\"");
+                    prompt.AppendLine($"- Issue ID: {issue.Id}");
+                    prompt.AppendLine($"  * Key: {issue.Key}");
+                    prompt.AppendLine($"  * Title: \"{issue.Title}\"");
                     prompt.AppendLine($"  * Type: {issue.Type}, Priority: {issue.Priority}");
                     prompt.AppendLine($"  * Story Points: {issue.StoryPoints ?? 0}");
                     if (issue.AssigneeId.HasValue)
@@ -278,10 +331,20 @@ namespace BACKEND_CQRS.Infrastructure.Services
             // In-progress and planned sprints context
             if (context.InProgressSprints?.Any() == true)
             {
-                prompt.AppendLine("## IN-PROGRESS SPRINTS:");
+                prompt.AppendLine("## IN-PROGRESS SPRINTS (Same Team):");
                 foreach (var sprint in context.InProgressSprints)
                 {
-                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} allocated, {sprint.RemainingPoints} remaining");
+                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} points allocated, {sprint.RemainingPoints} points remaining, Due: {sprint.DueDate:yyyy-MM-dd}");
+                }
+                prompt.AppendLine();
+            }
+
+            if (context.PlannedSprints?.Any() == true)
+            {
+                prompt.AppendLine("## PLANNED SPRINTS (Same Team):");
+                foreach (var sprint in context.PlannedSprints)
+                {
+                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} points allocated, Start: {sprint.StartDate:yyyy-MM-dd}");
                 }
                 prompt.AppendLine();
             }

@@ -40,14 +40,28 @@ namespace BACKEND_CQRS.Infrastructure.Services
 
             // 3. Log context being sent to Gemini
             _logger.LogInformation($"Sending context to Gemini AI for project {projectId}");
-            _logger.LogDebug($"Context: {JsonSerializer.Serialize(context)}");
+
+            // Log the full context JSON for debugging
+            var contextJson = JsonSerializer.Serialize(context, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            _logger.LogInformation($"===== CONTEXT SENT TO GEMINI =====");
+            _logger.LogInformation($"{contextJson}");
+            _logger.LogInformation($"===== END CONTEXT =====");
 
             // 4. Call Gemini AI Service
             var response = await _geminiAIService.GenerateSprintPlanAsync(context);
 
             // 5. Log response
             _logger.LogInformation($"Received response from Gemini AI for project {projectId}");
-            _logger.LogDebug($"Response: {JsonSerializer.Serialize(response)}");
+            _logger.LogInformation($"===== GEMINI RESPONSE =====");
+            var responseJson = JsonSerializer.Serialize(response, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            _logger.LogInformation($"{responseJson}");
+            _logger.LogInformation($"===== END RESPONSE =====");
 
             return response;
         }
@@ -81,8 +95,8 @@ namespace BACKEND_CQRS.Infrastructure.Services
                 },
                 BacklogIssues = await GetBacklogIssuesAsync(projectId),
                 TeamVelocity = await GetTeamVelocityAsync(projectId, request.TeamId),
-                InProgressSprints = await GetInProgressSprintsAsync(projectId),
-                PlannedSprints = await GetPlannedSprintsAsync(projectId)
+                InProgressSprints = await GetInProgressSprintsAsync(projectId, request.TeamId),
+                PlannedSprints = await GetPlannedSprintsAsync(projectId, request.TeamId)
             };
 
             return context;
@@ -110,16 +124,10 @@ namespace BACKEND_CQRS.Infrastructure.Services
 
         private async Task<List<BacklogIssueDto>> GetBacklogIssuesAsync(Guid projectId)
         {
-            var completedStatusNames = new[] { "Done", "Closed", "Completed" };
-            var backlogStatusNames = new[] { "To Do", "Open", "Backlog" };
-
+            // Fetch ALL backlog issues where sprint_id IS NULL
+            // Don't filter by status - let Gemini decide based on priority and other factors
             var backlogIssuesQuery = await _context.Issues
-                .Where(i => i.ProjectId == projectId
-                    && i.SprintId == null
-                    && _context.Statuses
-                        .Where(s => backlogStatusNames.Contains(s.StatusName))
-                        .Select(s => s.Id)
-                        .Contains(i.StatusId ?? 0))
+                .Where(i => i.ProjectId == projectId && i.SprintId == null)
                 .OrderByDescending(i => i.Priority)
                 .ThenBy(i => i.CreatedAt)
                 .Select(i => new
@@ -177,11 +185,16 @@ namespace BACKEND_CQRS.Infrastructure.Services
             var historicalSprints = await GetHistoricalSprintsAsync(projectId, teamId);
             var memberVelocities = await GetMemberVelocitiesAsync(projectId, teamId);
 
-            var averageVelocity = historicalSprints.Any()
-                ? historicalSprints.Average(s => s.CompletedPoints)
+            // Calculate average velocity only from COMPLETED sprints
+            var completedSprints = historicalSprints
+                .Where(s => s.Status == "COMPLETED")
+                .ToList();
+
+            var averageVelocity = completedSprints.Any()
+                ? completedSprints.Average(s => s.CompletedPoints)
                 : 0;
 
-            var recentVelocityTrend = CalculateVelocityTrend(historicalSprints);
+            var recentVelocityTrend = CalculateVelocityTrend(completedSprints);
 
             return new TeamVelocityDto
             {
@@ -200,9 +213,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
             var completedStatusNames = new[] { "Done", "Closed", "Completed" };
 
             var sprints = await _context.Sprints
-                .Where(s => s.TeamId == teamId
-                    && s.ProjectId == projectId
-                    && (s.Status == "COMPLETED" || s.Status == "ACTIVE"))
+                .Where(s => s.TeamId == teamId && s.ProjectId == projectId)
                 .OrderByDescending(s => s.CreatedAt)
                 .Take(10)
                 .Select(s => new
@@ -339,12 +350,12 @@ namespace BACKEND_CQRS.Infrastructure.Services
             return result;
         }
 
-        private async Task<List<InProgressSprintDto>> GetInProgressSprintsAsync(Guid projectId)
+        private async Task<List<InProgressSprintDto>> GetInProgressSprintsAsync(Guid projectId, int teamId)
         {
             var completedStatusNames = new[] { "Done", "Closed", "Completed" };
 
             var inProgressSprints = await _context.Sprints
-                .Where(s => s.ProjectId == projectId && s.Status == "ACTIVE")
+                .Where(s => s.ProjectId == projectId && s.Status == "ACTIVE" && s.TeamId == teamId)
                 .Select(s => new
                 {
                     s.Id,
@@ -355,7 +366,6 @@ namespace BACKEND_CQRS.Infrastructure.Services
                         .Select(i => new
                         {
                             i.StoryPoints,
-                            i.AssigneeId,
                             StatusName = _context.Statuses
                                 .Where(st => st.Id == i.StatusId)
                                 .Select(st => st.StatusName)
@@ -378,20 +388,15 @@ namespace BACKEND_CQRS.Infrastructure.Services
                     SprintName = s.Name,
                     DueDate = s.DueDate,
                     AllocatedPoints = allocatedPoints,
-                    RemainingPoints = remainingPoints,
-                    TeamMemberIds = s.Issues
-                        .Where(i => i.AssigneeId.HasValue)
-                        .Select(i => i.AssigneeId!.Value)
-                        .Distinct()
-                        .ToList()
+                    RemainingPoints = remainingPoints
                 };
             }).ToList();
         }
 
-        private async Task<List<PlannedSprintDto>> GetPlannedSprintsAsync(Guid projectId)
+        private async Task<List<PlannedSprintDto>> GetPlannedSprintsAsync(Guid projectId, int teamId)
         {
             var plannedSprints = await _context.Sprints
-                .Where(s => s.ProjectId == projectId && s.Status == "PLANNED")
+                .Where(s => s.ProjectId == projectId && s.Status == "PLANNED" && s.TeamId == teamId)
                 .Select(s => new
                 {
                     s.Id,
@@ -401,8 +406,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
                         .Where(i => i.SprintId == s.Id)
                         .Select(i => new
                         {
-                            i.StoryPoints,
-                            i.AssigneeId
+                            i.StoryPoints
                         })
                         .ToList()
                 })
@@ -413,12 +417,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
                 SprintId = s.Id,
                 SprintName = s.Name,
                 StartDate = s.StartDate,
-                AllocatedPoints = s.Issues.Sum(i => i.StoryPoints ?? 0),
-                TeamMemberIds = s.Issues
-                    .Where(i => i.AssigneeId.HasValue)
-                    .Select(i => i.AssigneeId!.Value)
-                    .Distinct()
-                    .ToList()
+                AllocatedPoints = s.Issues.Sum(i => i.StoryPoints ?? 0)
             }).ToList();
         }
 

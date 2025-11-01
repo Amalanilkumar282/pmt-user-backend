@@ -82,7 +82,6 @@ namespace BACKEND_CQRS.Domain.Dto.AI
         public DateTime? DueDate { get; set; }
         public decimal AllocatedPoints { get; set; }
         public decimal RemainingPoints { get; set; }
-        public List<int> TeamMemberIds { get; set; } = new List<int>();
     }
 
     public class PlannedSprintDto
@@ -91,6 +90,5 @@ namespace BACKEND_CQRS.Domain.Dto.AI
         public string SprintName { get; set; } = string.Empty;
         public DateTime? StartDate { get; set; }
         public decimal AllocatedPoints { get; set; }
-        public List<int> TeamMemberIds { get; set; } = new List<int>();
     }
 }
