@@ -23,10 +23,14 @@ namespace BACKEND_CQRS.Application.Dto
 
         public int? AssigneeId { get; set; }
 
+        public string? AssigneeName { get; set; }
+
         public DateTimeOffset? StartDate { get; set; }
 
         public DateTimeOffset? DueDate { get; set; }
         public int? StatusId { get; set; }
+
+        public string? StatusName { get; set; }
 
         public Guid? SprintId { get; set; }
         public Guid? ParentIssueId { get; set; }
@@ -39,5 +43,11 @@ namespace BACKEND_CQRS.Application.Dto
         public int ReporterId { get; set; }
         public string? Labels { get; set; }
         public string? AttachmentUrl { get; set; }
+
+        public DateTimeOffset? CreatedAt { get; set; } // <-- added
+
+        public DateTimeOffset? UpdatedAt { get; set; }
+
+
     }
 }

@@ -4,7 +4,9 @@ using BACKEND_CQRS.Application.Query.Issues;
 using BACKEND_CQRS.Application.Wrapper;
 using BACKEND_CQRS.Domain.Entities;
 using BACKEND_CQRS.Domain.Persistance;
+using BACKEND_CQRS.Infrastructure.Context;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -13,31 +15,27 @@ using System.Threading.Tasks;
 namespace BACKEND_CQRS.Application.Handler.Issues
 {
     public class GetIssueBySprintProjectIdQueryHandler
-        : IRequestHandler<GetIssueBySprintProjectIdQuery, ApiResponse<List<IssueDto>>>
+      : IRequestHandler<GetIssueBySprintProjectIdQuery, ApiResponse<List<IssueDto>>>
     {
         private readonly IMapper _mapper;
         private readonly IIssueRepository _issueRepository;
+        private readonly AppDbContext _dbContext; // 👈 Add DbContext reference
 
-        public GetIssueBySprintProjectIdQueryHandler(IMapper mapper, IIssueRepository issueRepository)
+        public GetIssueBySprintProjectIdQueryHandler(IMapper mapper, IIssueRepository issueRepository, AppDbContext dbContext)
         {
             _mapper = mapper;
             _issueRepository = issueRepository;
+            _dbContext = dbContext;
         }
 
         public async Task<ApiResponse<List<IssueDto>>> Handle(GetIssueBySprintProjectIdQuery request, CancellationToken cancellationToken)
         {
-            List<Issue> issues;
-
-            if (request.SprintId.HasValue)
-            {
-                // Fetch issues matching both project and sprint
-                issues = await _issueRepository.FindAsync(i => i.ProjectId == request.ProjectId && i.SprintId == request.SprintId);
-            }
-            else
-            {
-                // Fetch all issues under the project (no sprint filter)
-                issues = await _issueRepository.FindAsync(i => i.ProjectId == request.ProjectId);
-            }
+            var issues = await _dbContext.Issues
+                .Include(i => i.Status)
+                .Include(i => i.Assignee)
+                .Where(i => i.ProjectId == request.ProjectId &&
+                            (!request.SprintId.HasValue || i.SprintId == request.SprintId))
+                .ToListAsync(cancellationToken);
 
             if (issues == null || !issues.Any())
             {
