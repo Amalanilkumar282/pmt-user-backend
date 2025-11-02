@@ -27,9 +27,10 @@ namespace BACKEND_CQRS.Api.Controllers
             return newIssue;
         }
 
-        [HttpPut]
-        public async Task<ApiResponse<Guid>> EditIssue([FromBody] EditIssueCommand command)
+        [HttpPut("{id}")]
+        public async Task<ApiResponse<Guid>> EditIssue([FromRoute] Guid id, [FromBody] EditIssueCommand command)
         {
+            command.Id = id; // Set the ID from route parameter
             var result = await _mediator.Send(command);
             return result;
         }
