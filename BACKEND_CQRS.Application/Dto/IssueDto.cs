@@ -23,6 +23,8 @@ namespace BACKEND_CQRS.Application.Dto
 
         public int? AssigneeId { get; set; }
 
+        public string? AssigneeName { get; set; }
+
         public DateTimeOffset? StartDate { get; set; }
 
         public DateTimeOffset? DueDate { get; set; }
