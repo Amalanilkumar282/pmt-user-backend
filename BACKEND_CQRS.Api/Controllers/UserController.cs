@@ -34,6 +34,20 @@ namespace BACKEND_CQRS.Api.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{userId}")]
+        public async Task<ActionResult<ApiResponse<UserDto>>> GetUserById([FromRoute] int userId)
+        {
+            var query = new GetUserByIdQuery(userId);
+            var result = await _mediator.Send(query);
+
+            if (result.Status != 200)
+            {
+                return NotFound(result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpGet("{userId}/activities")]
         public async Task<ApiResponse<List<ActivityLogDto>>> GetUserActivities(
             [FromRoute] int userId,

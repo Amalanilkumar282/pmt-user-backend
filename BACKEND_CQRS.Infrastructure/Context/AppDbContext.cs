@@ -50,7 +50,7 @@ namespace BACKEND_CQRS.Infrastructure.Context
                       .HasForeignKey(pm => pm.UserId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // The navigation 'Users' (FK: AddedBy) is a separate relationship to Users (no inverse collection)
+                // The navigation 'AddedByUser' (FK: AddedBy) is a separate relationship to Users (no inverse collection)
                 entity.HasOne(pm => pm.AddedByUser)
                       .WithMany()
                       .HasForeignKey(pm => pm.AddedBy)
@@ -218,6 +218,10 @@ namespace BACKEND_CQRS.Infrastructure.Context
                       .WithMany()
                       .HasForeignKey(t => t.UpdatedBy)
                       .OnDelete(DeleteBehavior.Restrict);
+                
+                // CRITICAL FIX: Ignore the ProjectMembers collection navigation property
+                // This prevents EF Core from inferring a TeamsId shadow property
+                entity.Ignore(t => t.ProjectMembers);
             });
 
             // Configure Mention relationships with Users
