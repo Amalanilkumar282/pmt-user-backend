@@ -16,7 +16,7 @@ namespace BACKEND_CQRS.Application.Dto
         public List<string>? Tags { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-
+        public int? LeadId { get; set; }  //new
         public LeadDto? Lead { get; set; }
         public List<TeamMemberDto> Members { get; set; } = new();
 
@@ -26,6 +26,7 @@ namespace BACKEND_CQRS.Application.Dto
 
         public class LeadDto
         {
+            public int? UserId { get; set; }
             public string? Name { get; set; }
             public string? Email { get; set; }
             public string? Role { get; set; }
@@ -33,6 +34,9 @@ namespace BACKEND_CQRS.Application.Dto
 
         public class TeamMemberDto
         {
+            public int MemberId { get; set; } //new
+
+            public int UserId { get; set; }
             public string? Name { get; set; }
             public string? Email { get; set; }
             public string? Role { get; set; }

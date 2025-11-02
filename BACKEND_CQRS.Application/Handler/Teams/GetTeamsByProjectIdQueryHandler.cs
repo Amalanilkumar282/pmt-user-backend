@@ -74,6 +74,8 @@ namespace BACKEND_CQRS.Application.Handler.Teams
                 // ✅ Get Members
                 var membersSql = @"
                     SELECT 
+                        pm.id as MemberId,
+                        u.id as UserId,
                         u.name as Name,
                         u.email as Email,
                         r.name as Role
@@ -89,6 +91,8 @@ namespace BACKEND_CQRS.Application.Handler.Teams
 
                 var members = memberResults.Select(m => new TeamDetailsDto.TeamMemberDto
                 {
+                    MemberId = m.MemberId,
+                    UserId = m.UserId,
                     Name = m.Name,
                     Email = m.Email,
                     Role = m.Role
@@ -111,6 +115,7 @@ namespace BACKEND_CQRS.Application.Handler.Teams
                     Tags = team.Label,
                     CreatedAt = team.CreatedAt,
                     UpdatedAt = team.UpdatedAt,
+                    LeadId = team.LeadId,
                     Lead = leadInfo,
                     Members = members,
                     MemberCount = members.Count,
@@ -131,6 +136,8 @@ namespace BACKEND_CQRS.Application.Handler.Teams
 
         public class TeamMemberDtoRaw
         {
+            public int MemberId { get; set; }
+            public int UserId { get; set; }
             public string Name { get; set; }
             public string Email { get; set; }
             public string Role { get; set; }
