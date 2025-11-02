@@ -1,5 +1,6 @@
 ﻿using BACKEND_CQRS.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using PmtAdmin.Domain.Entities;
 
 namespace BACKEND_CQRS.Infrastructure.Context
 {
@@ -36,6 +37,9 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<Role> Roles { get; set; }
         
         public DbSet<Mention> Mentions { get; set; }
+        public DbSet<DeliveryUnit> DeliveryUnits { get; set; }
+        public DbSet<ProjectStatus> ProjectStatuses { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -74,6 +78,7 @@ namespace BACKEND_CQRS.Infrastructure.Context
                       .WithMany()
                       .HasForeignKey(u => u.UpdatedBy)
                       .OnDelete(DeleteBehavior.Restrict);
+                entity.Ignore(u => u.ManagedDeliveryUnits);
             });
 
             //// Configure Projects relationships with Users
@@ -122,6 +127,18 @@ namespace BACKEND_CQRS.Infrastructure.Context
                 entity.HasMany(p => p.Teams)
                       .WithOne(t => t.Project)
                       .HasForeignKey(t => t.ProjectId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // ✅ Configure DeliveryUnit relationship explicitly
+                entity.HasOne(p => p.DeliveryUnit)
+                      .WithMany(d => d.Projects)
+                      .HasForeignKey(p => p.DeliveryUnitId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // ✅ Configure Status relationship explicitly
+                entity.HasOne(p => p.Status)
+                      .WithMany(s => s.Projects)
+                      .HasForeignKey(p => p.StatusId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
