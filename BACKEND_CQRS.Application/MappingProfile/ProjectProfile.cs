@@ -18,6 +18,9 @@ namespace BACKEND_CQRS.Application.MappingProfile
                 .ForMember(dest => dest.CustomerDescription, opt => opt.MapFrom(src => src.CustomerDescription))
                 .ForMember(dest => dest.PocEmail, opt => opt.MapFrom(src => src.PocEmail))
                 .ForMember(dest => dest.PocPhone, opt => opt.MapFrom(src => src.PocPhone))
+                .ForMember(dest => dest.ProjectManagerName, opt => opt.MapFrom(src => src.ProjectManager != null ? src.ProjectManager.Name : null))
+                .ForMember(dest => dest.DeliveryUnitName, opt => opt.MapFrom(src => src.DeliveryUnit != null ? src.DeliveryUnit.Name : null))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status != null ? src.Status.Name : null))
                 .ReverseMap();
         }
     }
