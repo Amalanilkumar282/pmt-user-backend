@@ -18,7 +18,8 @@ namespace BACKEND_CQRS.Application.MappingProfile
                 .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.IssueType));
 
             CreateMap<Issue, IssueDto>()
-               .ForMember(dest => dest.IssueType, opt => opt.MapFrom(src => src.Type));
+               .ForMember(dest => dest.IssueType, opt => opt.MapFrom(src => src.Type))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status != null ? src.Status.StatusName : null));
 
             // Map from EditIssueCommand to Issue entity
             CreateMap<EditIssueCommand, Issue>()
