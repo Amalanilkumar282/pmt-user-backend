@@ -132,6 +132,7 @@ namespace BACKEND_CQRS.Application.Handler.Teams
             // ✅ Build Response
             return new TeamDetailsDto
             {
+                TeamId = team.Id,
                 TeamName = team.Name,
                 ProjectName = projectName,
                 Description = team.Description,
