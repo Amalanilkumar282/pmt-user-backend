@@ -30,21 +30,14 @@ namespace BACKEND_CQRS.Application.Handler.Issues
 
         public async Task<ApiResponse<List<IssueDto>>> Handle(GetIssueBySprintProjectIdQuery request, CancellationToken cancellationToken)
         {
-            IQueryable<Issue> query = _dbContext.Issues
-                .Include(i => i.Status); // 👈 This ensures Status is loaded
+            var issues = await _dbContext.Issues
+                .Include(i => i.Status)
+                .Include(i => i.Assignee)
+                .Where(i => i.ProjectId == request.ProjectId &&
+                            (!request.SprintId.HasValue || i.SprintId == request.SprintId))
+                .ToListAsync(cancellationToken);
 
-            if (request.SprintId.HasValue)
-            {
-                query = query.Where(i => i.ProjectId == request.ProjectId && i.SprintId == request.SprintId);
-            }
-            else
-            {
-                query = query.Where(i => i.ProjectId == request.ProjectId);
-            }
-
-            var issues = await query.ToListAsync(cancellationToken);
-
-            if (!issues.Any())
+            if (issues == null || !issues.Any())
             {
                 return ApiResponse<List<IssueDto>>.Fail("No issues found for the specified project/sprint.");
             }
