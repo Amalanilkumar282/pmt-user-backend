@@ -103,6 +103,7 @@ namespace BACKEND_CQRS.Application.Handler.Teams
 
                 teamDetailsList.Add(new TeamDetailsDto
                 {
+                    TeamId = team.Id,
                     TeamName = team.Name,
                     ProjectName = projectName,
                     Description = team.Description,

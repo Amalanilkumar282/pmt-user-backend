@@ -8,6 +8,7 @@ namespace BACKEND_CQRS.Application.Dto
 {
     public class TeamDetailsDto
     {
+        public int TeamId { get; set; }
         public string? TeamName { get; set; }
         public string? ProjectName { get; set; }
         public string? Description { get; set; }
