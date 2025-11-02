@@ -5,8 +5,7 @@ namespace BACKEND_CQRS.Application.Dto
 {
     public class CreateSprintDto
     {
-        public Guid Id { get; set; } // Added Id
-        public Guid? ProjectId { get; set; } // Added ProjectId as optional
+        public Guid? ProjectId { get; set; } // ProjectId as optional
 
         [Required]
         public string SprintName { get; set; }
