@@ -44,7 +44,7 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
 
-        [Column("Label")]
+        [Column("labels")]
         public List<string>? Label { get; set; }
 
         // 🔹 Lead is now a ProjectMember, not a User
