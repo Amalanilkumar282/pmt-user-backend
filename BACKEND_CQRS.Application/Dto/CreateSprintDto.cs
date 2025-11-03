@@ -6,15 +6,15 @@ namespace BACKEND_CQRS.Application.Dto
     public class CreateSprintDto
     {
         public Guid Id { get; set; } // Added Id
-        public Guid? ProjectId { get; set; } // Added ProjectId as optional
+        public Guid? ProjectId { get; set; } // Optional
 
         [Required]
-        public string SprintName { get; set; }
-        public string SprintGoal { get; set; }
-        public int? TeamAssigned { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? DueDate { get; set; }
-        public string Status { get; set; } = "Planned";
-        public decimal? StoryPoint { get; set; }
+        public string SprintName { get; set; } = string.Empty; // Required
+        public string? SprintGoal { get; set; } // Optional
+        public int? TeamAssigned { get; set; } // Optional
+        public DateTime? StartDate { get; set; } // Optional
+        public DateTime? DueDate { get; set; } // Optional
+        public string? Status { get; set; } = "PLANNED"; // Optional, defaults to PLANNED
+        public decimal? StoryPoint { get; set; } // Optional
     }
 }

@@ -58,6 +58,8 @@ namespace BACKEND_CQRS.Infrastructure.Services
                     {
                         // Validate that all returned issue IDs exist in the backlog
                         var backlogIssueIds = context.BacklogIssues?.Select(i => i.Id).ToHashSet() ?? new HashSet<Guid>();
+                        var backlogIssueLookup = context.BacklogIssues?.ToDictionary(i => i.Id) ?? new Dictionary<Guid, BacklogIssueDto>();
+
                         var invalidIssues = response.SprintPlan.SelectedIssues
                             .Where(si => !backlogIssueIds.Contains(si.IssueId))
                             .ToList();
@@ -72,6 +74,16 @@ namespace BACKEND_CQRS.Infrastructure.Services
 
                             // Recalculate total story points
                             response.SprintPlan.TotalStoryPoints = response.SprintPlan.SelectedIssues.Sum(i => i.StoryPoints);
+                        }
+
+                        // Enrich missing titles from backlog data
+                        foreach (var selectedIssue in response.SprintPlan.SelectedIssues)
+                        {
+                            if (string.IsNullOrEmpty(selectedIssue.Title) && backlogIssueLookup.TryGetValue(selectedIssue.IssueId, out var backlogIssue))
+                            {
+                                selectedIssue.Title = backlogIssue.Title;
+                                _logger.LogDebug($"Enriched missing title for issue {selectedIssue.IssueKey}: {backlogIssue.Title}");
+                            }
                         }
 
                         if (response.SprintPlan.SelectedIssues.Any())
@@ -244,6 +256,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
       {
         ""issueId"": ""exact-uuid-from-backlog-list"",
         ""issueKey"": ""string like PHX-201"",
+        ""title"": ""exact title from the backlog issue"",
         ""storyPoints"": number,
         ""suggestedAssigneeId"": number or null,
         ""rationale"": ""brief explanation why this issue was selected""
@@ -267,18 +280,31 @@ namespace BACKEND_CQRS.Infrastructure.Services
 }");
             prompt.AppendLine();
             prompt.AppendLine("## PROJECT CONTEXT:");
-            prompt.AppendLine($"- Project: {context.Project?.Name} ({context.Project?.Key})");
-            prompt.AppendLine($"- Sprint: {context.NewSprint?.Name}");
-            prompt.AppendLine($"- Sprint Goal: {context.NewSprint?.Goal ?? "Not specified"}");
-            prompt.AppendLine($"- Sprint Duration: {context.NewSprint?.StartDate:yyyy-MM-dd} to {context.NewSprint?.DueDate:yyyy-MM-dd}");
-            prompt.AppendLine($"- Target Story Points: {context.NewSprint?.TargetStoryPoints ?? 0}");
+            prompt.AppendLine($"- Project: {context.Project?.Name ?? "Unknown"} ({context.Project?.Key ?? "N/A"})");
+            prompt.AppendLine($"- Sprint: {context.NewSprint?.Name ?? "Unnamed Sprint (AI should suggest a name)"}");
+            prompt.AppendLine($"- Sprint Goal: {context.NewSprint?.Goal ?? "Not specified - AI can suggest a goal based on selected issues"}");
+
+            // Handle dates gracefully
+            var startDate = context.NewSprint?.StartDate?.ToString("yyyy-MM-dd") ?? "Not specified";
+            var dueDate = context.NewSprint?.DueDate?.ToString("yyyy-MM-dd") ?? "Not specified";
+            prompt.AppendLine($"- Sprint Duration: {startDate} to {dueDate}");
+
+            // Handle target points
+            var targetPoints = context.NewSprint?.TargetStoryPoints?.ToString("F0") ?? "Not specified (use team velocity as guide)";
+            prompt.AppendLine($"- Target Story Points: {targetPoints}");
             prompt.AppendLine();
 
             // Team velocity information
             if (context.TeamVelocity != null)
             {
                 prompt.AppendLine("## TEAM VELOCITY:");
-                prompt.AppendLine($"- Team: {context.TeamVelocity.TeamName}");
+
+                // Handle nullable team ID
+                var teamInfo = context.TeamVelocity.TeamId.HasValue
+                    ? $"{context.TeamVelocity.TeamName} (ID: {context.TeamVelocity.TeamId})"
+                    : context.TeamVelocity.TeamName;
+                prompt.AppendLine($"- Team: {teamInfo}");
+
                 prompt.AppendLine($"- Team Size: {context.TeamVelocity.MemberCount} members");
                 prompt.AppendLine($"- Average Velocity: {context.TeamVelocity.AverageVelocity:F2} story points per sprint");
                 prompt.AppendLine($"- Velocity Trend: {context.TeamVelocity.RecentVelocityTrend}");
@@ -291,6 +317,16 @@ namespace BACKEND_CQRS.Infrastructure.Services
                         prompt.AppendLine($"  * {sprint.SprintName}: {sprint.CompletedPoints}/{sprint.PlannedPoints} points ({sprint.CompletionRate:F0}% completion)");
                     }
                 }
+                else
+                {
+                    prompt.AppendLine("- No historical sprint data available (new team or first sprint)");
+                }
+            }
+            else
+            {
+                prompt.AppendLine("## TEAM VELOCITY:");
+                prompt.AppendLine("- No team specified or no velocity data available");
+                prompt.AppendLine("- AI should plan conservatively based on backlog complexity and story points");
             }
             prompt.AppendLine();
 
@@ -331,29 +367,36 @@ namespace BACKEND_CQRS.Infrastructure.Services
             // In-progress and planned sprints context
             if (context.InProgressSprints?.Any() == true)
             {
-                prompt.AppendLine("## IN-PROGRESS SPRINTS (Same Team):");
+                var teamLabel = (context.NewSprint?.TeamId.HasValue == true) ? "(Same Team)" : "(All Teams)";
+                prompt.AppendLine($"## IN-PROGRESS SPRINTS {teamLabel}:");
                 foreach (var sprint in context.InProgressSprints)
                 {
-                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} points allocated, {sprint.RemainingPoints} points remaining, Due: {sprint.DueDate:yyyy-MM-dd}");
+                    var dueDateStr = sprint.DueDate?.ToString("yyyy-MM-dd") ?? "No due date";
+                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} points allocated, {sprint.RemainingPoints} points remaining, Due: {dueDateStr}");
                 }
                 prompt.AppendLine();
             }
 
             if (context.PlannedSprints?.Any() == true)
             {
-                prompt.AppendLine("## PLANNED SPRINTS (Same Team):");
+                var teamLabel = (context.NewSprint?.TeamId.HasValue == true) ? "(Same Team)" : "(All Teams)";
+                prompt.AppendLine($"## PLANNED SPRINTS {teamLabel}:");
                 foreach (var sprint in context.PlannedSprints)
                 {
-                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} points allocated, Start: {sprint.StartDate:yyyy-MM-dd}");
+                    var startDateStr = sprint.StartDate?.ToString("yyyy-MM-dd") ?? "No start date";
+                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} points allocated, Start: {startDateStr}");
                 }
                 prompt.AppendLine();
             }
 
             // Planning constraints
             prompt.AppendLine("## PLANNING CONSTRAINTS & RULES:");
-            prompt.AppendLine($"1. Total story points should be close to target ({context.NewSprint?.TargetStoryPoints ?? 0}) but NOT EXCEED average velocity + 20%");
+
+            var targetPointsForConstraint = context.NewSprint?.TargetStoryPoints?.ToString("F0") ?? "team velocity";
+            prompt.AppendLine($"1. Total story points should be close to target ({targetPointsForConstraint}) but NOT EXCEED average velocity + 20%");
+
             prompt.AppendLine("2. Prioritize issues in this order: CRITICAL > HIGH > MEDIUM > LOW");
-            prompt.AppendLine("3. Balance story point distribution across team members");
+            prompt.AppendLine("3. Balance story point distribution across team members (if team is specified)");
             prompt.AppendLine("4. Include a healthy mix of issue types: STORY, TASK, BUG");
             prompt.AppendLine("5. Consider velocity trend:");
 
@@ -428,6 +471,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
                     {
                         IssueId = issue.Id,
                         IssueKey = issue.Key,
+                        Title = issue.Title,
                         StoryPoints = issuePoints,
                         SuggestedAssigneeId = issue.AssigneeId,
                         Rationale = $"{issue.Priority ?? "MEDIUM"} priority {issue.Type} issue selected for sprint"

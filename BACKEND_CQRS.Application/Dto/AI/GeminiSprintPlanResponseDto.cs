@@ -21,6 +21,7 @@ namespace BACKEND_CQRS.Application.Dto.AI
     {
         public Guid IssueId { get; set; }
         public string IssueKey { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
         public int StoryPoints { get; set; }
         public int? SuggestedAssigneeId { get; set; }
         public string Rationale { get; set; } = string.Empty;

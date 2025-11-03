@@ -32,8 +32,11 @@ namespace BACKEND_CQRS.Infrastructure.Services
             PlanSprintRequestDto request,
             int userId)
         {
-            // 1. Validate team exists and belongs to project
-            await ValidateTeamAsync(projectId, request.TeamId);
+            // 1. Validate team exists and belongs to project (only if team is provided)
+            if (request.TeamId.HasValue)
+            {
+                await ValidateTeamAsync(projectId, request.TeamId.Value);
+            }
 
             // 2. Build context from database
             var context = await BuildSprintPlanningContextAsync(projectId, request);
@@ -164,10 +167,25 @@ namespace BACKEND_CQRS.Infrastructure.Services
             return backlogIssues;
         }
 
-        private async Task<TeamVelocityDto> GetTeamVelocityAsync(Guid projectId, int teamId)
+        private async Task<TeamVelocityDto> GetTeamVelocityAsync(Guid projectId, int? teamId)
         {
+            // If no team is specified, return empty velocity data
+            if (!teamId.HasValue)
+            {
+                return new TeamVelocityDto
+                {
+                    TeamId = null,
+                    TeamName = "No team specified",
+                    MemberCount = 0,
+                    HistoricalSprints = new List<HistoricalSprintDto>(),
+                    AverageVelocity = 0,
+                    RecentVelocityTrend = "stable",
+                    MemberVelocities = new List<MemberVelocityDto>()
+                };
+            }
+
             var team = await _context.Teams
-                .Where(t => t.Id == teamId)
+                .Where(t => t.Id == teamId.Value)
                 .Select(t => new
                 {
                     t.Id,
@@ -182,8 +200,8 @@ namespace BACKEND_CQRS.Infrastructure.Services
                 throw new InvalidOperationException($"Team {teamId} not found");
             }
 
-            var historicalSprints = await GetHistoricalSprintsAsync(projectId, teamId);
-            var memberVelocities = await GetMemberVelocitiesAsync(projectId, teamId);
+            var historicalSprints = await GetHistoricalSprintsAsync(projectId, teamId.Value);
+            var memberVelocities = await GetMemberVelocitiesAsync(projectId, teamId.Value);
 
             // Calculate average velocity only from COMPLETED sprints
             var completedSprints = historicalSprints
@@ -350,12 +368,20 @@ namespace BACKEND_CQRS.Infrastructure.Services
             return result;
         }
 
-        private async Task<List<InProgressSprintDto>> GetInProgressSprintsAsync(Guid projectId, int teamId)
+        private async Task<List<InProgressSprintDto>> GetInProgressSprintsAsync(Guid projectId, int? teamId)
         {
             var completedStatusNames = new[] { "Done", "Closed", "Completed" };
 
-            var inProgressSprints = await _context.Sprints
-                .Where(s => s.ProjectId == projectId && s.Status == "ACTIVE" && s.TeamId == teamId)
+            var query = _context.Sprints
+                .Where(s => s.ProjectId == projectId && s.Status == "ACTIVE");
+
+            // Filter by team only if teamId is provided
+            if (teamId.HasValue)
+            {
+                query = query.Where(s => s.TeamId == teamId.Value);
+            }
+
+            var inProgressSprints = await query
                 .Select(s => new
                 {
                     s.Id,
@@ -393,10 +419,18 @@ namespace BACKEND_CQRS.Infrastructure.Services
             }).ToList();
         }
 
-        private async Task<List<PlannedSprintDto>> GetPlannedSprintsAsync(Guid projectId, int teamId)
+        private async Task<List<PlannedSprintDto>> GetPlannedSprintsAsync(Guid projectId, int? teamId)
         {
-            var plannedSprints = await _context.Sprints
-                .Where(s => s.ProjectId == projectId && s.Status == "PLANNED" && s.TeamId == teamId)
+            var query = _context.Sprints
+                .Where(s => s.ProjectId == projectId && s.Status == "PLANNED");
+
+            // Filter by team only if teamId is provided
+            if (teamId.HasValue)
+            {
+                query = query.Where(s => s.TeamId == teamId.Value);
+            }
+
+            var plannedSprints = await query
                 .Select(s => new
                 {
                     s.Id,

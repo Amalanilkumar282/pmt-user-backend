@@ -31,13 +31,13 @@ namespace BACKEND_CQRS.Application.Handler.Sprints
             {
                 _logger.LogInformation($"Planning sprint with AI for project {request.ProjectId}");
 
-                // Validate required fields
-                if (string.IsNullOrWhiteSpace(request.SprintName))
-                {
-                    return ApiResponse<GeminiSprintPlanResponseDto>.Fail("Sprint name is required");
-                }
+                // SprintName is now optional - generate one if not provided
+                var sprintName = string.IsNullOrWhiteSpace(request.SprintName)
+                    ? $"Sprint {DateTime.UtcNow:yyyy-MM-dd}"
+                    : request.SprintName;
 
-                if (request.TeamId <= 0)
+                // Team is optional. If provided, it must be a positive integer.
+                if (request.TeamId.HasValue && request.TeamId.Value <= 0)
                 {
                     return ApiResponse<GeminiSprintPlanResponseDto>.Fail("Valid team ID is required");
                 }
@@ -45,7 +45,7 @@ namespace BACKEND_CQRS.Application.Handler.Sprints
                 // Create request DTO
                 var planRequest = new PlanSprintRequestDto
                 {
-                    SprintName = request.SprintName,
+                    SprintName = sprintName,
                     SprintGoal = request.SprintGoal,
                     TeamId = request.TeamId,
                     StartDate = request.StartDate,

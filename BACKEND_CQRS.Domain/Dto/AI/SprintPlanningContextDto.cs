@@ -22,9 +22,9 @@ namespace BACKEND_CQRS.Domain.Dto.AI
 
     public class NewSprintDto
     {
-        public string Name { get; set; } = string.Empty;
+        public string? Name { get; set; }
         public string? Goal { get; set; }
-        public int TeamId { get; set; }
+        public int? TeamId { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? DueDate { get; set; }
         public decimal? TargetStoryPoints { get; set; }
@@ -46,7 +46,7 @@ namespace BACKEND_CQRS.Domain.Dto.AI
 
     public class TeamVelocityDto
     {
-        public int TeamId { get; set; }
+        public int? TeamId { get; set; }
         public string TeamName { get; set; } = string.Empty;
         public int MemberCount { get; set; }
         public List<HistoricalSprintDto> HistoricalSprints { get; set; } = new List<HistoricalSprintDto>();

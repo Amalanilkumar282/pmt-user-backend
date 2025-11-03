@@ -84,6 +84,28 @@ Creates a new sprint for a project team. Used after planning is complete to pers
   - `Content-Type: application/json`
 - **Body:**
 
+All fields except `projectId` can be null/optional. The API will auto-generate missing values where possible and handle nulls gracefully.
+
+| Field             | Type    | Required | Nullable | Description                                  |
+| ----------------- | ------- | -------- | -------- | -------------------------------------------- |
+| sprintName        | string  | No       | Yes      | Name of the sprint. If null, auto-generated. |
+| sprintGoal        | string  | No       | Yes      | Goal for the sprint.                         |
+| startDate         | string  | No       | Yes      | Sprint start date (ISO 8601).                |
+| endDate           | string  | No       | Yes      | Sprint end date (ISO 8601).                  |
+| targetStoryPoints | integer | No       | Yes      | Target story points for the sprint.          |
+| teamId            | string  | No       | Yes      | Team identifier.                             |
+| projectId         | string  | Yes      | No       | Project identifier.                          |
+
+Example minimal request:
+
+```json
+{
+  "projectId": "project-guid"
+}
+```
+
+Example full request:
+
 ```json
 {
   "sprintName": "Sprint 15",
@@ -121,11 +143,81 @@ Creates a new sprint for a project team. Used after planning is complete to pers
 
 ### Error Responses
 
-- **400 Bad Request**: Missing or invalid fields (e.g., dates, teamId, projectId)
+All error messages are returned in the `message` field with the appropriate HTTP status code.
+
+- **400 Bad Request**
+
+  - Missing or invalid `projectId`:
+    ```json
+    {
+      "succeeded": false,
+      "statusCode": 400,
+      "message": "Invalid or missing projectId."
+    }
+    ```
+  - Invalid date format:
+    ```json
+    {
+      "succeeded": false,
+      "statusCode": 400,
+      "message": "Invalid date format. Use ISO 8601 (YYYY-MM-DD)."
+    }
+    ```
+  - Invalid targetStoryPoints:
+    ```json
+    {
+      "succeeded": false,
+      "statusCode": 400,
+      "message": "Target story points must be a positive integer."
+    }
+    ```
+  - Invalid teamId:
+    ```json
+    {
+      "succeeded": false,
+      "statusCode": 400,
+      "message": "Specified team does not exist or is not part of the project."
+    }
+    ```
+
 - **401 Unauthorized**: Missing or invalid token
+
+  ```json
+  {
+    "succeeded": false,
+    "statusCode": 401,
+    "message": "Unauthorized. Invalid or missing token."
+  }
+  ```
+
 - **404 Not Found**: Team or project not found
+
+  ```json
+  {
+    "succeeded": false,
+    "statusCode": 404,
+    "message": "Project or team not found."
+  }
+  ```
+
 - **409 Conflict**: Sprint overlaps with existing sprint
+
+  ```json
+  {
+    "succeeded": false,
+    "statusCode": 409,
+    "message": "Sprint dates overlap with an existing sprint."
+  }
+  ```
+
 - **500 Internal Server Error**: Unexpected server error
+  ```json
+  {
+    "succeeded": false,
+    "statusCode": 500,
+    "message": "An unexpected error occurred. Please try again later."
+  }
+  ```
 
 **Error Format:**
 
@@ -181,6 +273,7 @@ Generates an AI-powered sprint plan for a project using Google Gemini. Returns r
         {
           "issueId": "uuid",
           "issueKey": "PHX-201",
+          "title": "Implement user authentication API",
           "storyPoints": 8,
           "suggestedAssigneeId": 5,
           "rationale": "CRITICAL priority authentication feature"
