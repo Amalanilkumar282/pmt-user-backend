@@ -33,6 +33,8 @@ namespace BACKEND_CQRS.Application.Handler.Issues
             var issues = await _dbContext.Issues
                 .Include(i => i.Status)
                 .Include(i => i.Assignee)
+                .Include(i => i.Sprint)
+                .Include(i => i.Epic)
                 .Where(i => i.ProjectId == request.ProjectId &&
                             (!request.SprintId.HasValue || i.SprintId == request.SprintId))
                 .ToListAsync(cancellationToken);
