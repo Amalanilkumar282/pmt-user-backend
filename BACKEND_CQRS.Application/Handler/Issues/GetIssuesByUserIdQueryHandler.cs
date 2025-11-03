@@ -27,10 +27,13 @@ namespace BACKEND_CQRS.Application.Handler.Issues
 
         public async Task<ApiResponse<List<IssueDto>>> Handle(GetIssuesByUserIdQuery request, CancellationToken cancellationToken)
         {
-            // Fetch all issues where user is the assignee, including Status navigation property
+            // Fetch all issues where user is the assignee, including all necessary navigation properties
             var issues = await _dbContext.Issues
                 .AsNoTracking()
                 .Include(i => i.Status)
+                .Include(i => i.Assignee)
+                .Include(i => i.Sprint)
+                .Include(i => i.Epic)
                 .Where(i => i.AssigneeId == request.UserId)
                 .ToListAsync(cancellationToken);
 
