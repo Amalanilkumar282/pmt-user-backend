@@ -12,14 +12,12 @@ namespace BACKEND_CQRS.Application.MappingProfile
             CreateMap<Sprint, CreateSprintDto>()
                 .ForMember(dest => dest.SprintName, opt => opt.MapFrom(src => src.Name))
                 .ForMember(dest => dest.TeamAssigned, opt => opt.MapFrom(src => src.TeamId))
-                .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId))
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id));
+                .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId)); // Removed Id mapping
 
             CreateMap<CreateSprintCommand, Sprint>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.SprintName))
                 .ForMember(dest => dest.TeamId, opt => opt.MapFrom(src => src.TeamAssigned))
-                .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId))
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id));
+                .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId)); // Removed Id mapping
 
             CreateMap<Sprint, SprintDto>().ReverseMap();
         }

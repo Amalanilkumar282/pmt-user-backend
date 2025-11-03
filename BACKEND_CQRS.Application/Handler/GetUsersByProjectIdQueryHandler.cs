@@ -77,6 +77,7 @@ namespace BACKEND_CQRS.Application.Handler
             // Map to DTOs
             var projectUserDtos = projectMembers.Select(pm => new ProjectUserDto
             {
+                ProjectMemberId = pm.Id,
                 Id = pm.User.Id,
                 Email = pm.User.Email,
                 Name = pm.User.Name,

@@ -7,8 +7,7 @@ namespace BACKEND_CQRS.Application.Command
 {
     public class CreateSprintCommand : IRequest<ApiResponse<CreateSprintDto>>
     {
-        public Guid Id { get; set; } // Added Id
-        public Guid? ProjectId { get; set; } // Added ProjectId as optional
+        public Guid? ProjectId { get; set; } // ProjectId as optional
         public string SprintName { get; set; }
         public string? SprintGoal { get; set; }
         public int? TeamAssigned { get; set; }
