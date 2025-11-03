@@ -8,6 +8,7 @@ namespace BACKEND_CQRS.Application.Dto
         public Guid Id { get; set; }
 
         public string? Key { get; set; }
+        
         [Required]
         public Guid ProjectId { get; set; }
 
@@ -22,7 +23,7 @@ namespace BACKEND_CQRS.Application.Dto
         public string? Priority { get; set; }
 
         public int? AssigneeId { get; set; }
-
+        
         public string? AssigneeName { get; set; }
 
         public DateTimeOffset? StartDate { get; set; }
@@ -33,17 +34,16 @@ namespace BACKEND_CQRS.Application.Dto
         
         public string? StatusName { get; set; }
 
-        public string? StatusName { get; set; }
-
         public Guid? SprintId { get; set; }
-
+        
         public string? SprintName { get; set; }
-      
+        
         public Guid? ParentIssueId { get; set; }
 
         public int? StoryPoints { get; set; }
 
         public Guid? EpicId { get; set; }
+        
         public string? EpicName { get; set; }
 
         [Required]
@@ -52,11 +52,5 @@ namespace BACKEND_CQRS.Application.Dto
         public string? Labels { get; set; }
         
         public string? AttachmentUrl { get; set; }
-
-        public DateTimeOffset? CreatedAt { get; set; } // <-- added
-
-        public DateTimeOffset? UpdatedAt { get; set; }
-
-
     }
 }
