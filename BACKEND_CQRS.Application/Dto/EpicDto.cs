@@ -9,6 +9,7 @@ namespace BACKEND_CQRS.Application.Dto
     public class EpicDto
     {
         public Guid Id { get; set; }
+        public Guid? ProjectId { get; set; }
         public string Title { get; set; }
         public string? Description { get; set; }
         public DateTime? StartDate { get; set; }

@@ -78,5 +78,33 @@ namespace BACKEND_CQRS.Domain.Entities
 
         [Column("attachment_url")]
         public string? AttachmentUrl { get; set; }
+
+        // Navigation properties
+        [ForeignKey("StatusId")]
+        public Status? Status { get; set; }
+
+        [ForeignKey("ProjectId")]
+        public Projects? Project { get; set; }
+
+        [ForeignKey("EpicId")]
+        public Epic? Epic { get; set; }
+
+        [ForeignKey("SprintId")]
+        public Sprint? Sprint { get; set; }
+
+        [ForeignKey("ParentIssueId")]
+        public Issue? ParentIssue { get; set; }
+
+        [ForeignKey("AssigneeId")]
+        public Users? Assignee { get; set; }
+
+        [ForeignKey("ReporterId")]
+        public Users Reporter { get; set; }
+
+        [ForeignKey("CreatedBy")]
+        public Users? Creator { get; set; }
+
+        [ForeignKey("UpdatedBy")]
+        public Users? Updater { get; set; }
     }
 }

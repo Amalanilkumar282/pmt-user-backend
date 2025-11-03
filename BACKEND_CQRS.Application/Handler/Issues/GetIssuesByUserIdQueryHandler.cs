@@ -2,8 +2,9 @@
 using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Query.Issues;
 using BACKEND_CQRS.Application.Wrapper;
-using BACKEND_CQRS.Domain.Persistance;
+using BACKEND_CQRS.Infrastructure.Context;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,18 +17,25 @@ namespace BACKEND_CQRS.Application.Handler.Issues
         : IRequestHandler<GetIssuesByUserIdQuery, ApiResponse<List<IssueDto>>>
     {
         private readonly IMapper _mapper;
-        private readonly IIssueRepository _issueRepository;
+        private readonly AppDbContext _dbContext;
 
-        public GetIssuesByUserIdQueryHandler(IMapper mapper, IIssueRepository issueRepository)
+        public GetIssuesByUserIdQueryHandler(IMapper mapper, AppDbContext dbContext)
         {
             _mapper = mapper;
-            _issueRepository = issueRepository;
+            _dbContext = dbContext;
         }
 
         public async Task<ApiResponse<List<IssueDto>>> Handle(GetIssuesByUserIdQuery request, CancellationToken cancellationToken)
         {
-            // Fetch all issues where user is the assignee
-            var issues = await _issueRepository.FindAsync(i => i.AssigneeId == request.UserId);
+            // Fetch all issues where user is the assignee, including all necessary navigation properties
+            var issues = await _dbContext.Issues
+                .AsNoTracking()
+                .Include(i => i.Status)
+                .Include(i => i.Assignee)
+                .Include(i => i.Sprint)
+                .Include(i => i.Epic)
+                .Where(i => i.AssigneeId == request.UserId)
+                .ToListAsync(cancellationToken);
 
             if (issues == null || !issues.Any())
             {

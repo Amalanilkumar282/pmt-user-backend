@@ -26,16 +26,33 @@ namespace BACKEND_CQRS.Application.Handler.Projects
 
         public async Task<ApiResponse<List<ProjectDto>>> Handle(GetRecentProjectsQuery request, CancellationToken cancellationToken)
         {
-            // Query recent projects ordered by UpdatedAt descending, exclude deleted
+            // First get project IDs for the user
+            var projectIds = await _dbContext.ProjectMembers
+                .AsNoTracking()
+                .Where(pm => pm.UserId == request.UserId)
+                .Select(pm => pm.ProjectId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            if (projectIds == null || !projectIds.Any())
+            {
+                return ApiResponse<List<ProjectDto>>.Fail("No recent projects found for this user.");
+            }
+
+            // Query recent projects for the user, ordered by UpdatedAt descending, exclude deleted
             var projects = await _dbContext.Projects
-                .Where(p => p.DeletedAt == null)
+                .AsNoTracking()
+                .Include(p => p.ProjectManager)
+                .Include(p => p.DeliveryUnit)
+                .Include(p => p.Status)
+                .Where(p => projectIds.Contains(p.Id) && p.DeletedAt == null)
                 .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
                 .Take(request.Take)
                 .ToListAsync(cancellationToken);
 
             if (projects == null || !projects.Any())
             {
-                return ApiResponse<List<ProjectDto>>.Fail("No recent projects found.");
+                return ApiResponse<List<ProjectDto>>.Fail("No recent projects found for this user.");
             }
 
             // Map entities to DTOs

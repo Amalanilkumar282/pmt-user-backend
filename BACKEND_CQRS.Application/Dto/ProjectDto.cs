@@ -16,5 +16,8 @@ namespace BACKEND_CQRS.Application.Dto
         public string CustomerDescription { get; set; }
         public string PocEmail { get; set; }
         public string PocPhone { get; set; }
+        public string ProjectManagerName { get; set; }
+        public string DeliveryUnitName { get; set; }
+        public string StatusName { get; set; }
     }
 }

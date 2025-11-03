@@ -26,10 +26,26 @@ namespace BACKEND_CQRS.Application.Handler.Project
 
         public async Task<ApiResponse<List<ProjectDto>>> Handle(GetUserProjectsQuery request, CancellationToken cancellationToken)
         {
-            // Query projects where user is a member
+            // First get project IDs for the user to avoid correlated subquery issues
+            var projectIds = await _dbContext.ProjectMembers
+                .AsNoTracking()
+                .Where(pm => pm.UserId == request.UserId)
+                .Select(pm => pm.ProjectId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            if (projectIds == null || !projectIds.Any())
+            {
+                return ApiResponse<List<ProjectDto>>.Fail("No projects found for this user.");
+            }
+
+            // Query projects where user is a member, including related entities
             var projects = await _dbContext.Projects
-                .Where(p => _dbContext.ProjectMembers
-                                       .Any(pm => pm.ProjectId == p.Id && pm.UserId == request.UserId))
+                .AsNoTracking()
+                .Include(p => p.ProjectManager)
+                .Include(p => p.DeliveryUnit)
+                .Include(p => p.Status)
+                .Where(p => projectIds.Contains(p.Id))
                 .ToListAsync(cancellationToken);
 
             if (projects == null || !projects.Any())

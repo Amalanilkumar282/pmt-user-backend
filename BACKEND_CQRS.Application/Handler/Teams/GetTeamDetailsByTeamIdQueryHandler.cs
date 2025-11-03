@@ -52,14 +52,15 @@ namespace BACKEND_CQRS.Application.Handler.Teams
 
             // ✅ Fetch Lead info using raw SQL
             var leadInfoSql = @"
-    SELECT 
-        u.name AS ""Name"",
-        u.email AS ""Email"",
-        r.name AS ""Role""
-    FROM project_members pm
-    INNER JOIN users u ON pm.user_id = u.id
-    INNER JOIN roles r ON pm.role_id = r.id
-    WHERE pm.id = {0}";
+     SELECT 
+    u.id AS ""UserId"",
+    u.name AS ""Name"",
+    u.email AS ""Email"",
+    r.name AS ""Role""
+FROM project_members pm
+INNER JOIN users u ON pm.user_id = u.id
+INNER JOIN roles r ON pm.role_id = r.id
+WHERE pm.id = {0}";
 
 
             TeamDetailsDto.LeadDto leadInfo = null;
@@ -75,6 +76,7 @@ namespace BACKEND_CQRS.Application.Handler.Teams
                 {
                     leadInfo = new TeamDetailsDto.LeadDto
                     {
+                        UserId = leadResult.UserId,
                         Name = leadResult.Name,
                         Email = leadResult.Email,
                         Role = leadResult.Role
@@ -89,6 +91,8 @@ namespace BACKEND_CQRS.Application.Handler.Teams
             // ✅ Fetch Team Members using raw SQL
             var membersSql = @"
         SELECT 
+pm.id AS ""MemberId"",
+    u.id AS ""UserId"",
             u.name as Name,
             u.email as Email,
             r.name as Role
@@ -109,6 +113,8 @@ namespace BACKEND_CQRS.Application.Handler.Teams
 
                 members = membersResult.Select(m => new TeamDetailsDto.TeamMemberDto
                 {
+                    MemberId = m.MemberId,
+                    UserId = m.UserId,
                     Name = m.Name,
                     Email = m.Email,
                     Role = m.Role
@@ -132,6 +138,7 @@ namespace BACKEND_CQRS.Application.Handler.Teams
             // ✅ Build Response
             return new TeamDetailsDto
             {
+                TeamId = team.Id,
                 TeamName = team.Name,
                 ProjectName = projectName,
                 Description = team.Description,
@@ -150,6 +157,7 @@ namespace BACKEND_CQRS.Application.Handler.Teams
         // Helper classes (add at the bottom of the file)
         public class LeadDtoRaw
         {
+            public int UserId { get; set; }
             public string Name { get; set; }
             public string Email { get; set; }
             public string Role { get; set; }
@@ -157,6 +165,8 @@ namespace BACKEND_CQRS.Application.Handler.Teams
 
         public class TeamMemberDtoRaw
         {
+            public int MemberId { get; set; } // ✅ added
+            public int UserId { get; set; }
             public string Name { get; set; }
             public string Email { get; set; }
             public string Role { get; set; }

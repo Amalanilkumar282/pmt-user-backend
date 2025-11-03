@@ -44,7 +44,7 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
 
-        [Column("Label")]
+        [Column("labels")]
         public List<string>? Label { get; set; }
 
         // 🔹 Lead is now a ProjectMember, not a User
@@ -70,6 +70,13 @@ namespace BACKEND_CQRS.Domain.Entities
 
          //✅ Add this navigation property
         public ICollection<TeamMember> TeamMembers { get; set; } = new List<TeamMember>();
+
+
+        public ICollection<Board> Boards { get; set; }
+        public ICollection<ProjectMembers> ProjectMembers { get; set; }
+        public ICollection<Channel> Channels { get; set; }
+
+        public ICollection<Sprint>? Sprints { get; set; }
     }
 }
 

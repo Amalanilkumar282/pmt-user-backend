@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PmtAdmin.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -18,28 +19,28 @@ namespace BACKEND_CQRS.Domain.Entities
 
         [Column("name")]
         [Required]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [Column("key")]
-        public string Key { get; set; }
+        public string? Key { get; set; }
 
         [Column("description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [Column("customer_org_name")]
-        public string CustomerOrgName { get; set; }
+        public string? CustomerOrgName { get; set; }
 
         [Column("customer_domain_url")]
-        public string CustomerDomainUrl { get; set; }
-
+        public string? CustomerDomainUrl { get; set; }
+            
         [Column("customer_description")]
-        public string CustomerDescription { get; set; }
+        public string? CustomerDescription { get; set; }
 
         [Column("poc_email")]
-        public string PocEmail { get; set; }
+        public string? PocEmail { get; set; }
 
         [Column("poc_phone")]
-        public string PocPhone { get; set; }
+        public string? PocPhone { get; set; }
 
         [Column("project_manager_id")]
         public int? ProjectManagerId { get; set; }
@@ -60,16 +61,16 @@ namespace BACKEND_CQRS.Domain.Entities
         public int? UpdatedBy { get; set; }
 
         [Column("created_at")]
-        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }        //    change to DateTime
 
         [Column("updated_at")]
-        public DateTimeOffset? UpdatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }   //change to DateTime
 
         [Column("metadata", TypeName = "jsonb")]
-        public string Metadata { get; set; }
+        public string? Metadata { get; set; }
 
         [Column("deleted_at")]
-        public DateTimeOffset? DeletedAt { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; } //change to DateTime
 
         [Column("isimportedfromjira")]
         public bool? IsImportedFromJira { get; set; }
@@ -78,9 +79,58 @@ namespace BACKEND_CQRS.Domain.Entities
         public int? TemplateId { get; set; }
 
         // Navigation property for project manager role
-        // Using ForeignKey attribute to map to project_manager_role_id column
+        // Navigation properties
+
+        [ForeignKey("ProjectManagerId")]
+
+        public Users? ProjectManager { get; set; }
+
         [ForeignKey("ProjectManagerRoleId")]
-        public Role ProjectManagerRole { get; set; }
+
+        public Role? ProjectManagerRole { get; set; }
+
+        [ForeignKey("StatusId")]
+
+        public ProjectStatus? Status { get; set; }
+
+        [ForeignKey("DeliveryUnitId")]
+
+        public DeliveryUnit? DeliveryUnit { get; set; }
+
+        [ForeignKey("CreatedBy")]
+
+        public Users? Creator { get; set; }
+
+        [ForeignKey("UpdatedBy")]
+
+        public Users? Updater { get; set; }
+
+        [ForeignKey("TemplateId")]
+
+        public ProjectTemplate? Template { get; set; }
+
+        public ICollection<Teams> Teams { get; set; }
+
+
+        public ICollection<Board> Boards { get; set; }
+
+        public ICollection<ProjectMembers> ProjectMembers { get; set; }
+
+        public ICollection<Sprint> Sprints { get; set; }
+
+        public ICollection<Epic> Epics { get; set; }
+
+        public ICollection<Issue> Issues { get; set; }
+
+        public ICollection<JiraAuthorization> JiraAuthorizations { get; set; }
+
+        public ICollection<CustomField> CustomFields { get; set; }
+
+        public ICollection<StarredProjects>? StarredProjects { get; set; }
+
+
+
+        // ForeignKey 
     }
 }
 

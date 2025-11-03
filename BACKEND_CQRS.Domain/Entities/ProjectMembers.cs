@@ -30,6 +30,7 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("added_at")]
         public DateTimeOffset? AddedAt { get; set; }
 
+
         [Column("added_by")]
         public int? AddedBy { get; set; }
 
@@ -42,6 +43,13 @@ namespace BACKEND_CQRS.Domain.Entities
 
         [ForeignKey("RoleId")]
         public Role? Role { get; set; }
+
+        [ForeignKey("AddedBy")]
+        public Users? AddedByUser { get; set; }
+
+
+
+
     }
 }
 

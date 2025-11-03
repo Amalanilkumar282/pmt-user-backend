@@ -5,6 +5,7 @@ namespace BACKEND_CQRS.Application.Dto
 {
     public class ProjectUserDto
     {
+        public int ProjectMemberId { get; set; }
         public int Id { get; set; }
         public string Email { get; set; }
         public string Name { get; set; }

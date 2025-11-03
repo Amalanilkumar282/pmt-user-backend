@@ -7,8 +7,9 @@ using System.Threading.Tasks;
 
 namespace BACKEND_CQRS.Domain.Persistance
 {
-    public interface IEpicRepository
+    public interface IEpicRepository : IGenericRepository<Epic>
     {
         Task<List<Epic>> GetEpicsByProjectIdAsync(Guid projectId);
+        Task<Epic?> GetEpicByIdAsync(Guid epicId);
     }
 }
