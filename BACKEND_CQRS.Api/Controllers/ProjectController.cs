@@ -142,5 +142,20 @@ namespace BACKEND_CQRS.Api.Controllers
             var result = await _mediator.Send(query);
             return result;
         }
+
+
+        [HttpDelete("delete")]
+        public async Task<ActionResult<ApiResponse<string>>> DeleteMember(DeleteProjectMemberCommand command)
+        {
+            var response = await _mediator.Send(command);
+            return Ok(response);
+        }
+        [HttpPut("update")]
+        public async Task<ActionResult<ApiResponse<UpdateProjectMemberResponseDto>>> UpdateProjectMember(UpdateProjectMemberCommand command)
+        {
+            var response = await _mediator.Send(command);
+            return Ok(response);
+        }
+
     }
 }
