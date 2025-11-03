@@ -33,11 +33,15 @@ namespace BACKEND_CQRS.Application.Dto
         public string? StatusName { get; set; }
 
         public Guid? SprintId { get; set; }
+
+        public string? SprintName { get; set; }
+      
         public Guid? ParentIssueId { get; set; }
 
         public int? StoryPoints { get; set; }
 
         public Guid? EpicId { get; set; }
+        public string? EpicName { get; set; }
 
         [Required]
         public int ReporterId { get; set; }
