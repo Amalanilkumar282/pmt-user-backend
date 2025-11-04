@@ -34,6 +34,14 @@ namespace BACKEND_CQRS.Api.Controllers
             return result;
         }
 
+        [HttpPut("{epicId}/dates")]
+        public async Task<ApiResponse<Guid>> UpdateEpicDates([FromRoute] Guid epicId, [FromBody] UpdateEpicDatesCommand command)
+        {
+            command.EpicId = epicId; // Set the ID from route parameter
+            var result = await _mediator.Send(command);
+            return result;
+        }
+
         [HttpDelete("{epicId}")]
         public async Task<ApiResponse<Guid>> DeleteEpic(Guid epicId)
         {
