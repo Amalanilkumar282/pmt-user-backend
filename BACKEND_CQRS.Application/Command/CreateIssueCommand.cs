@@ -20,6 +20,7 @@ namespace BACKEND_CQRS.Application.Command
         public Guid? EpicId { get; set; }
         public int ReporterId { get; set; }
         public string? AttachmentUrl { get; set; }
+        public int? StatusId { get; set; } // Added StatusId
         public string? Labels { get; set; } // Stores labels as JSON string
     }
 }
