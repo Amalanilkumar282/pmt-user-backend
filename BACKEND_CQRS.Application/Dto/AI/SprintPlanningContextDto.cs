@@ -8,7 +8,13 @@ namespace BACKEND_CQRS.Application.Dto.AI
         public ProjectInfoDto Project { get; set; }
         public NewSprintDto NewSprint { get; set; }
         public List<BacklogIssueDto> BacklogIssues { get; set; }
-        public TeamVelocityDto TeamVelocity { get; set; }
+
+        // Used when teamId is provided (Scenario 1)
+        public TeamVelocityDto? TeamVelocity { get; set; }
+
+        // Used when teamId is NOT provided (Scenario 2)
+        public List<HistoricalSprintDto>? HistoricalSprints { get; set; }
+
         public List<InProgressSprintDto> InProgressSprints { get; set; }
         public List<PlannedSprintDto> PlannedSprints { get; set; }
     }

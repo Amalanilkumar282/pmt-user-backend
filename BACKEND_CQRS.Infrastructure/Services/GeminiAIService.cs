@@ -294,7 +294,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
             prompt.AppendLine($"- Target Story Points: {targetPoints}");
             prompt.AppendLine();
 
-            // Team velocity information
+            // Team velocity information (Scenario 1: Team specified)
             if (context.TeamVelocity != null)
             {
                 prompt.AppendLine("## TEAM VELOCITY:");
@@ -311,21 +311,50 @@ namespace BACKEND_CQRS.Infrastructure.Services
 
                 if (context.TeamVelocity.HistoricalSprints?.Any() == true)
                 {
-                    prompt.AppendLine($"- Recent Sprint Performance:");
-                    foreach (var sprint in context.TeamVelocity.HistoricalSprints.Take(5))
+                    prompt.AppendLine($"- Historical Sprint Performance (Team-Specific, COMPLETED sprints only):");
+                    foreach (var sprint in context.TeamVelocity.HistoricalSprints.Take(10))
                     {
-                        prompt.AppendLine($"  * {sprint.SprintName}: {sprint.CompletedPoints}/{sprint.PlannedPoints} points ({sprint.CompletionRate:F0}% completion)");
+                        prompt.AppendLine($"  * {sprint.SprintName}: Status={sprint.Status}, Completed={sprint.CompletedPoints}/{sprint.PlannedPoints} points ({sprint.CompletionRate:F0}% completion), Duration={sprint.DurationDays} days");
                     }
                 }
                 else
                 {
                     prompt.AppendLine("- No historical sprint data available (new team or first sprint)");
                 }
+
+                if (context.TeamVelocity.MemberVelocities?.Any() == true)
+                {
+                    prompt.AppendLine($"- Team Member Performance:");
+                    foreach (var member in context.TeamVelocity.MemberVelocities)
+                    {
+                        prompt.AppendLine($"  * {member.Name} (ID: {member.UserId}): Avg {member.AvgPointsPerSprint:F1} pts/sprint, {member.CompletionRate:F0}% completion rate");
+                        if (member.IssueTypesPreference?.Any() == true)
+                        {
+                            prompt.AppendLine($"    Preferred types: {string.Join(", ", member.IssueTypesPreference)}");
+                        }
+                    }
+                }
+            }
+            // Scenario 2: No team specified - show project-level historical sprints
+            else if (context.HistoricalSprints?.Any() == true)
+            {
+                prompt.AppendLine("## HISTORICAL SPRINT PERFORMANCE (All Teams, COMPLETED sprints only):");
+                prompt.AppendLine($"Total historical sprints available: {context.HistoricalSprints.Count}");
+                prompt.AppendLine();
+                foreach (var sprint in context.HistoricalSprints.Take(15))
+                {
+                    prompt.AppendLine($"- {sprint.SprintName}:");
+                    prompt.AppendLine($"  * Status: {sprint.Status}");
+                    prompt.AppendLine($"  * Completed: {sprint.CompletedPoints}/{sprint.PlannedPoints} points ({sprint.CompletionRate:F0}% completion)");
+                    prompt.AppendLine($"  * Duration: {sprint.DurationDays} days");
+                }
+                prompt.AppendLine();
+                prompt.AppendLine("Note: No specific team velocity data available. Use historical sprint patterns to estimate capacity.");
             }
             else
             {
                 prompt.AppendLine("## TEAM VELOCITY:");
-                prompt.AppendLine("- No team specified or no velocity data available");
+                prompt.AppendLine("- No team specified and no historical sprint data available");
                 prompt.AppendLine("- AI should plan conservatively based on backlog complexity and story points");
             }
             prompt.AppendLine();
@@ -368,12 +397,26 @@ namespace BACKEND_CQRS.Infrastructure.Services
             if (context.InProgressSprints?.Any() == true)
             {
                 var teamLabel = (context.NewSprint?.TeamId.HasValue == true) ? "(Same Team)" : "(All Teams)";
-                prompt.AppendLine($"## IN-PROGRESS SPRINTS {teamLabel}:");
+                prompt.AppendLine($"## ACTIVE/IN-PROGRESS SPRINTS {teamLabel}:");
+                prompt.AppendLine("These sprints are currently ACTIVE and running. Consider their workload when planning:");
                 foreach (var sprint in context.InProgressSprints)
                 {
                     var dueDateStr = sprint.DueDate?.ToString("yyyy-MM-dd") ?? "No due date";
-                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} points allocated, {sprint.RemainingPoints} points remaining, Due: {dueDateStr}");
+                    var remainingPercent = sprint.AllocatedPoints > 0
+                        ? (sprint.RemainingPoints / sprint.AllocatedPoints * 100).ToString("F0")
+                        : "N/A";
+                    prompt.AppendLine($"- {sprint.SprintName}:");
+                    prompt.AppendLine($"  * Allocated: {sprint.AllocatedPoints} points");
+                    prompt.AppendLine($"  * Remaining: {sprint.RemainingPoints} points ({remainingPercent}% remaining)");
+                    prompt.AppendLine($"  * Due Date: {dueDateStr}");
                 }
+                prompt.AppendLine();
+            }
+            else
+            {
+                var teamLabel = (context.NewSprint?.TeamId.HasValue == true) ? "(Same Team)" : "(All Teams)";
+                prompt.AppendLine($"## ACTIVE/IN-PROGRESS SPRINTS {teamLabel}:");
+                prompt.AppendLine("No active sprints currently running.");
                 prompt.AppendLine();
             }
 
@@ -381,11 +424,21 @@ namespace BACKEND_CQRS.Infrastructure.Services
             {
                 var teamLabel = (context.NewSprint?.TeamId.HasValue == true) ? "(Same Team)" : "(All Teams)";
                 prompt.AppendLine($"## PLANNED SPRINTS {teamLabel}:");
+                prompt.AppendLine("These sprints are already planned but not yet started:");
                 foreach (var sprint in context.PlannedSprints)
                 {
                     var startDateStr = sprint.StartDate?.ToString("yyyy-MM-dd") ?? "No start date";
-                    prompt.AppendLine($"- {sprint.SprintName}: {sprint.AllocatedPoints} points allocated, Start: {startDateStr}");
+                    prompt.AppendLine($"- {sprint.SprintName}:");
+                    prompt.AppendLine($"  * Allocated: {sprint.AllocatedPoints} points");
+                    prompt.AppendLine($"  * Start Date: {startDateStr}");
                 }
+                prompt.AppendLine();
+            }
+            else
+            {
+                var teamLabel = (context.NewSprint?.TeamId.HasValue == true) ? "(Same Team)" : "(All Teams)";
+                prompt.AppendLine($"## PLANNED SPRINTS {teamLabel}:");
+                prompt.AppendLine("No future sprints are currently planned.");
                 prompt.AppendLine();
             }
 

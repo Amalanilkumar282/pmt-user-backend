@@ -97,10 +97,22 @@ namespace BACKEND_CQRS.Infrastructure.Services
                     TargetStoryPoints = request.TargetStoryPoints
                 },
                 BacklogIssues = await GetBacklogIssuesAsync(projectId),
-                TeamVelocity = await GetTeamVelocityAsync(projectId, request.TeamId),
                 InProgressSprints = await GetInProgressSprintsAsync(projectId, request.TeamId),
                 PlannedSprints = await GetPlannedSprintsAsync(projectId, request.TeamId)
             };
+
+            // Scenario 1: TeamId is provided - use team_velocity structure
+            if (request.TeamId.HasValue)
+            {
+                context.TeamVelocity = await GetTeamVelocityAsync(projectId, request.TeamId.Value);
+                context.HistoricalSprints = null; // Don't include root-level historical sprints
+            }
+            // Scenario 2: TeamId is NOT provided - use root-level historical_sprints
+            else
+            {
+                context.TeamVelocity = null; // Don't include team velocity
+                context.HistoricalSprints = await GetAllHistoricalSprintsAsync(projectId);
+            }
 
             return context;
         }
@@ -113,7 +125,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
                 {
                     Id = p.Id,
                     Key = p.Key ?? "",
-                    Name = p.Name
+                    Name = p.Name ?? ""
                 })
                 .FirstOrDefaultAsync();
 
@@ -167,25 +179,10 @@ namespace BACKEND_CQRS.Infrastructure.Services
             return backlogIssues;
         }
 
-        private async Task<TeamVelocityDto> GetTeamVelocityAsync(Guid projectId, int? teamId)
+        private async Task<TeamVelocityDto> GetTeamVelocityAsync(Guid projectId, int teamId)
         {
-            // If no team is specified, return empty velocity data
-            if (!teamId.HasValue)
-            {
-                return new TeamVelocityDto
-                {
-                    TeamId = null,
-                    TeamName = "No team specified",
-                    MemberCount = 0,
-                    HistoricalSprints = new List<HistoricalSprintDto>(),
-                    AverageVelocity = 0,
-                    RecentVelocityTrend = "stable",
-                    MemberVelocities = new List<MemberVelocityDto>()
-                };
-            }
-
             var team = await _context.Teams
-                .Where(t => t.Id == teamId.Value)
+                .Where(t => t.Id == teamId)
                 .Select(t => new
                 {
                     t.Id,
@@ -200,8 +197,8 @@ namespace BACKEND_CQRS.Infrastructure.Services
                 throw new InvalidOperationException($"Team {teamId} not found");
             }
 
-            var historicalSprints = await GetHistoricalSprintsAsync(projectId, teamId.Value);
-            var memberVelocities = await GetMemberVelocitiesAsync(projectId, teamId.Value);
+            var historicalSprints = await GetHistoricalSprintsAsync(projectId, teamId);
+            var memberVelocities = await GetMemberVelocitiesAsync(projectId, teamId);
 
             // Calculate average velocity only from COMPLETED sprints
             var completedSprints = historicalSprints
@@ -228,12 +225,9 @@ namespace BACKEND_CQRS.Infrastructure.Services
 
         private async Task<List<HistoricalSprintDto>> GetHistoricalSprintsAsync(Guid projectId, int teamId)
         {
-            var completedStatusNames = new[] { "Done", "Closed", "Completed" };
-
             var sprints = await _context.Sprints
-                .Where(s => s.TeamId == teamId && s.ProjectId == projectId)
-                .OrderByDescending(s => s.CreatedAt)
-                .Take(10)
+                .Where(s => s.TeamId == teamId && s.ProjectId == projectId && s.Status == "COMPLETED")
+                .OrderByDescending(s => s.StartDate)
                 .Select(s => new
                 {
                     s.Id,
@@ -241,26 +235,18 @@ namespace BACKEND_CQRS.Infrastructure.Services
                     s.Status,
                     s.StartDate,
                     s.DueDate,
-                    Issues = _context.Issues
+                    s.StoryPoint,
+                    // Sum ALL issues in the sprint (no status filter) - matches SQL query
+                    CompletedPoints = _context.Issues
                         .Where(i => i.SprintId == s.Id)
-                        .Select(i => new
-                        {
-                            i.StoryPoints,
-                            StatusName = _context.Statuses
-                                .Where(st => st.Id == i.StatusId)
-                                .Select(st => st.StatusName)
-                                .FirstOrDefault()
-                        })
-                        .ToList()
+                        .Sum(i => (decimal?)i.StoryPoints) ?? 0
                 })
                 .ToListAsync();
 
             return sprints.Select(s =>
             {
-                var plannedPoints = s.Issues.Sum(i => i.StoryPoints ?? 0);
-                var completedPoints = s.Issues
-                    .Where(i => completedStatusNames.Contains(i.StatusName ?? ""))
-                    .Sum(i => i.StoryPoints ?? 0);
+                var plannedPoints = s.StoryPoint ?? 0;
+                var completedPoints = s.CompletedPoints;
 
                 return new HistoricalSprintDto
                 {
@@ -270,10 +256,53 @@ namespace BACKEND_CQRS.Infrastructure.Services
                     DurationDays = s.StartDate.HasValue && s.DueDate.HasValue
                         ? (int)(s.DueDate.Value - s.StartDate.Value).TotalDays
                         : 0,
-                    PlannedPoints = plannedPoints,
-                    CompletedPoints = completedPoints,
+                    PlannedPoints = (int)plannedPoints,
+                    CompletedPoints = (int)completedPoints,
                     CompletionRate = plannedPoints > 0
-                        ? (completedPoints / (decimal)plannedPoints) * 100
+                        ? Math.Round((completedPoints / plannedPoints) * 100, 2)
+                        : 0
+                };
+            }).ToList();
+        }
+
+        // Scenario 2: Get all historical sprints across all teams (when teamId is NOT provided)
+        private async Task<List<HistoricalSprintDto>> GetAllHistoricalSprintsAsync(Guid projectId)
+        {
+            var sprints = await _context.Sprints
+                .Where(s => s.ProjectId == projectId && s.Status == "COMPLETED")
+                .OrderByDescending(s => s.StartDate)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Name,
+                    s.Status,
+                    s.StartDate,
+                    s.DueDate,
+                    s.StoryPoint,
+                    // Sum ALL issues in the sprint (no status filter) - matches SQL query
+                    CompletedPoints = _context.Issues
+                        .Where(i => i.SprintId == s.Id)
+                        .Sum(i => (decimal?)i.StoryPoints) ?? 0
+                })
+                .ToListAsync();
+
+            return sprints.Select(s =>
+            {
+                var plannedPoints = s.StoryPoint ?? 0;
+                var completedPoints = s.CompletedPoints;
+
+                return new HistoricalSprintDto
+                {
+                    SprintId = s.Id,
+                    SprintName = s.Name,
+                    Status = s.Status ?? "UNKNOWN",
+                    DurationDays = s.StartDate.HasValue && s.DueDate.HasValue
+                        ? (int)(s.DueDate.Value - s.StartDate.Value).TotalDays
+                        : 0,
+                    PlannedPoints = (int)plannedPoints,
+                    CompletedPoints = (int)completedPoints,
+                    CompletionRate = plannedPoints > 0
+                        ? Math.Round((completedPoints / plannedPoints) * 100, 2)
                         : 0
                 };
             }).ToList();
@@ -283,24 +312,21 @@ namespace BACKEND_CQRS.Infrastructure.Services
         {
             var completedStatusNames = new[] { "Done", "Closed", "Completed" };
 
-            // Get team member IDs
-            var teamMemberIds = await _context.TeamMembers
+            // Get team member user IDs
+            var teamMemberUserIds = await _context.TeamMembers
                 .Where(tm => tm.TeamId == teamId)
-                .Select(tm => tm.ProjectMemberId)
+                .Join(_context.ProjectMembers,
+                    tm => tm.ProjectMemberId,
+                    pm => pm.Id,
+                    (tm, pm) => pm.UserId)
                 .ToListAsync();
 
-            // Get user IDs from project members
-            var userIds = await _context.ProjectMembers
-                .Where(pm => teamMemberIds.Contains(pm.Id))
-                .Select(pm => pm.UserId)
-                .ToListAsync();
-
-            if (!userIds.Any())
+            if (!teamMemberUserIds.Any())
             {
                 return new List<MemberVelocityDto>();
             }
 
-            // Get completed sprints for this team
+            // Get completed sprint IDs for this team
             var completedSprintIds = await _context.Sprints
                 .Where(s => s.TeamId == teamId
                     && s.ProjectId == projectId
@@ -313,13 +339,12 @@ namespace BACKEND_CQRS.Infrastructure.Services
                 return new List<MemberVelocityDto>();
             }
 
-            // Get member statistics
+            // Calculate member statistics
             var memberStats = await _context.Issues
-                .Where(i => i.ProjectId == projectId
-                    && completedSprintIds.Contains(i.SprintId ?? Guid.Empty)
+                .Where(i => completedSprintIds.Contains(i.SprintId ?? Guid.Empty)
                     && i.AssigneeId.HasValue
-                    && userIds.Contains(i.AssigneeId.Value))
-                .GroupBy(i => i.AssigneeId)
+                    && teamMemberUserIds.Contains(i.AssigneeId.Value))
+                .GroupBy(i => i.AssigneeId!.Value)
                 .Select(g => new
                 {
                     UserId = g.Key,
@@ -327,12 +352,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
                     CompletedIssues = g.Count(i => _context.Statuses
                         .Where(st => st.Id == i.StatusId && completedStatusNames.Contains(st.StatusName))
                         .Any()),
-                    TotalPoints = g.Sum(i => i.StoryPoints ?? 0),
-                    CompletedPoints = g
-                        .Where(i => _context.Statuses
-                            .Where(st => st.Id == i.StatusId && completedStatusNames.Contains(st.StatusName))
-                            .Any())
-                        .Sum(i => i.StoryPoints ?? 0),
+                    AvgStoryPoints = g.Average(i => (decimal?)i.StoryPoints) ?? 0,
                     IssueTypes = g.Select(i => i.Type).Distinct().ToList()
                 })
                 .ToListAsync();
@@ -341,24 +361,22 @@ namespace BACKEND_CQRS.Infrastructure.Services
 
             foreach (var stat in memberStats)
             {
-                if (!stat.UserId.HasValue) continue;
-
                 var user = await _context.Users
-                    .Where(u => u.Id == stat.UserId.Value)
+                    .Where(u => u.Id == stat.UserId)
                     .FirstOrDefaultAsync();
 
                 if (user == null) continue;
 
                 var sprintCount = completedSprintIds.Count;
-                var avgPointsPerSprint = sprintCount > 0 ? (decimal)stat.CompletedPoints / sprintCount : 0;
-                var completionRate = stat.TotalPoints > 0
-                    ? ((decimal)stat.CompletedPoints / stat.TotalPoints) * 100
+                var avgPointsPerSprint = sprintCount > 0 ? stat.AvgStoryPoints : 0;
+                var completionRate = stat.TotalIssues > 0
+                    ? Math.Round(((decimal)stat.CompletedIssues / stat.TotalIssues) * 100, 1)
                     : 0;
 
                 result.Add(new MemberVelocityDto
                 {
-                    UserId = stat.UserId.Value,
-                    Name = user.Name,
+                    UserId = stat.UserId,
+                    Name = user.Name ?? "Unknown",
                     AvgPointsPerSprint = avgPointsPerSprint,
                     CompletionRate = completionRate,
                     IssueTypesPreference = stat.IssueTypes
@@ -370,8 +388,6 @@ namespace BACKEND_CQRS.Infrastructure.Services
 
         private async Task<List<InProgressSprintDto>> GetInProgressSprintsAsync(Guid projectId, int? teamId)
         {
-            var completedStatusNames = new[] { "Done", "Closed", "Completed" };
-
             var query = _context.Sprints
                 .Where(s => s.ProjectId == projectId && s.Status == "ACTIVE");
 
@@ -387,26 +403,19 @@ namespace BACKEND_CQRS.Infrastructure.Services
                     s.Id,
                     s.Name,
                     s.DueDate,
-                    Issues = _context.Issues
+                    s.StoryPoint,
+                    // Sum ALL issues in the sprint (no status filter) - matches SQL query
+                    CompletedPoints = _context.Issues
                         .Where(i => i.SprintId == s.Id)
-                        .Select(i => new
-                        {
-                            i.StoryPoints,
-                            StatusName = _context.Statuses
-                                .Where(st => st.Id == i.StatusId)
-                                .Select(st => st.StatusName)
-                                .FirstOrDefault()
-                        })
-                        .ToList()
+                        .Sum(i => (decimal?)i.StoryPoints) ?? 0
                 })
                 .ToListAsync();
 
             return inProgressSprints.Select(s =>
             {
-                var allocatedPoints = s.Issues.Sum(i => i.StoryPoints ?? 0);
-                var remainingPoints = s.Issues
-                    .Where(i => !completedStatusNames.Contains(i.StatusName ?? ""))
-                    .Sum(i => i.StoryPoints ?? 0);
+                var allocatedPoints = (int)(s.StoryPoint ?? 0);
+                var completedPoints = (int)s.CompletedPoints;
+                var remainingPoints = Math.Max(allocatedPoints - completedPoints, 0);
 
                 return new InProgressSprintDto
                 {
@@ -436,13 +445,7 @@ namespace BACKEND_CQRS.Infrastructure.Services
                     s.Id,
                     s.Name,
                     s.StartDate,
-                    Issues = _context.Issues
-                        .Where(i => i.SprintId == s.Id)
-                        .Select(i => new
-                        {
-                            i.StoryPoints
-                        })
-                        .ToList()
+                    s.StoryPoint
                 })
                 .ToListAsync();
 
@@ -451,22 +454,31 @@ namespace BACKEND_CQRS.Infrastructure.Services
                 SprintId = s.Id,
                 SprintName = s.Name,
                 StartDate = s.StartDate,
-                AllocatedPoints = s.Issues.Sum(i => i.StoryPoints ?? 0)
+                AllocatedPoints = (int)(s.StoryPoint ?? 0)
             }).ToList();
         }
 
         private string CalculateVelocityTrend(List<HistoricalSprintDto> sprints)
         {
-            if (sprints.Count < 6)
+            if (sprints.Count < 3)
             {
                 return "stable";
             }
 
-            var recent3 = sprints.Take(3).Average(s => s.CompletedPoints);
-            var previous3 = sprints.Skip(3).Take(3).Average(s => s.CompletedPoints);
+            // Get recent 3 sprints
+            var recentSprints = sprints.Take(3).ToList();
+            var maxCompleted = recentSprints.Max(s => s.CompletedPoints);
+            var minCompleted = recentSprints.Min(s => s.CompletedPoints);
 
-            if (recent3 > previous3 * 1.1m) return "increasing";
-            if (recent3 < previous3 * 0.9m) return "decreasing";
+            if ((maxCompleted - minCompleted) > 5)
+            {
+                return "increasing";
+            }
+            else if ((minCompleted - maxCompleted) > 5)
+            {
+                return "decreasing";
+            }
+
             return "stable";
         }
     }
