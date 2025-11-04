@@ -19,6 +19,8 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+		<PackageReference Include="Mscc.GenerativeAI" Version="2.2.0" />
 
 		<!-- ✅ PostgreSQL Provider for EF Core (Supabase compatible) -->
 		<PackageReference Include="Npgsql" Version="8.0.4" />
