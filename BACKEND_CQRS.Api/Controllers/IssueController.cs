@@ -154,7 +154,7 @@ namespace BACKEND_CQRS.Api.Controllers
             });
 
             return Ok(response);
-
+        }
         [HttpGet("project/{projectId}/statuses")]
         public async Task<ApiResponse<List<StatusDto>>> GetStatusesByProject([FromRoute] Guid projectId)
         {
