@@ -10,9 +10,10 @@ namespace BACKEND_CQRS.Application.MappingProfile
         public SprintProfile()
         {
             CreateMap<Sprint, CreateSprintDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id)) // Map sprint ID
                 .ForMember(dest => dest.SprintName, opt => opt.MapFrom(src => src.Name))
                 .ForMember(dest => dest.TeamAssigned, opt => opt.MapFrom(src => src.TeamId))
-                .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId)); // Removed Id mapping
+                .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId));
 
             CreateMap<CreateSprintCommand, Sprint>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.SprintName))
