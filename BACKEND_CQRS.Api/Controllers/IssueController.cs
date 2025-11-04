@@ -121,5 +121,12 @@ namespace BACKEND_CQRS.Api.Controllers
             var query = new GetIssueCountByStatusByProjectQuery(projectId);
             return await _mediator.Send(query);
         }
+
+        [HttpGet("project/{projectId}/statuses")]
+        public async Task<ApiResponse<List<StatusDto>>> GetStatusesByProject([FromRoute] Guid projectId)
+        {
+            var query = new GetStatusesByProjectQuery(projectId);
+            return await _mediator.Send(query);
+        }
     }
 }
