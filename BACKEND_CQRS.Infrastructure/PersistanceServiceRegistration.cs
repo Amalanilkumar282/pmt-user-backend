@@ -6,6 +6,7 @@ using BACKEND_CQRS.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 
 
 namespace BACKEND_CQRS.Infrastructure
@@ -38,13 +39,16 @@ namespace BACKEND_CQRS.Infrastructure
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IEpicRepository, EpicRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IPermissionRepository, PermissionRepository>();
 
             //services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 
             // Services
+            services.AddHttpClient<IGeminiAIService, GeminiAIService>();
             services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
             services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddScoped<IPasswordHashService, PasswordHashService>();
+            services.AddScoped<ISprintPlannerService, SprintPlannerService>();
             //services.AddScoped<IAuthService, AuthService>();
 
             // Logging

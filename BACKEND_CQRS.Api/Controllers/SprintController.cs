@@ -1,11 +1,13 @@
 using BACKEND_CQRS.Application.Command;
 using BACKEND_CQRS.Application.Dto;
+using BACKEND_CQRS.Domain.Dto.AI;
 using BACKEND_CQRS.Application.Query.Sprints;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace BACKEND_CQRS.Api.Controllers
@@ -13,10 +15,11 @@ namespace BACKEND_CQRS.Api.Controllers
     [Route("api/sprints")]
     [ApiController]
     [Authorize]
+
     public class SprintController : ControllerBase
     {
         private readonly IMediator _mediator;
-        
+
         public SprintController(IMediator mediator)
         {
             _mediator = mediator;
@@ -95,6 +98,40 @@ namespace BACKEND_CQRS.Api.Controllers
             var command = new CompleteSprintCommand(id);
             var result = await _mediator.Send(command);
             return result;
+        }
+
+        [HttpPost("projects/{projectId}/ai-plan")]
+        public async Task<IActionResult> PlanSprintWithAI(
+            Guid projectId,
+            [FromBody] PlanSprintRequestDto request)
+        {
+            // Get user ID from JWT claims
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(ApiResponse<GeminiSprintPlanResponseDto>.Fail("User ID not found in token"));
+            }
+
+            var command = new PlanSprintWithAICommand
+            {
+                ProjectId = projectId,
+                SprintName = request.SprintName,
+                SprintGoal = request.SprintGoal,
+                TeamId = request.TeamId,
+                StartDate = request.StartDate,
+                DueDate = request.DueDate,
+                TargetStoryPoints = request.TargetStoryPoints,
+                UserId = userId
+            };
+
+            var result = await _mediator.Send(command);
+
+            if (result.Status != 200)
+            {
+                return StatusCode(result.Status, result);
+            }
+
+            return Ok(result);
         }
     }
 }
