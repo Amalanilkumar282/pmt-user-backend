@@ -35,6 +35,14 @@ namespace BACKEND_CQRS.Api.Controllers
             return result;
         }
 
+        [HttpPut("{issueId}/dates")]
+        public async Task<ApiResponse<Guid>> UpdateIssueDates([FromRoute] Guid issueId, [FromBody] UpdateIssueDatesCommand command)
+        {
+            command.IssueId = issueId; // Set the ID from route parameter
+            var result = await _mediator.Send(command);
+            return result;
+        }
+        
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteIssue(Guid id)
         {
