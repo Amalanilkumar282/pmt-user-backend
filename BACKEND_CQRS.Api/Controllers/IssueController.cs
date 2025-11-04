@@ -35,6 +35,20 @@ namespace BACKEND_CQRS.Api.Controllers
             return result;
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteIssue(Guid id)
+        {
+            var command = new DeleteIssueCommand(id);
+            var result = await _mediator.Send(command);
+
+            if (result.Status != 200)
+            {
+                return NotFound(result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpGet("project/{projectId}/issues")]
         public async Task<ApiResponse<List<IssueDto>>> GetIssuesByProject(
      [FromRoute] Guid projectId)
