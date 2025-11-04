@@ -42,7 +42,7 @@ namespace BACKEND_CQRS.Application.Handler.Auth
                 _logger.LogInformation("Login attempt for email: {Email}", request.Email);
 
                 // Find user by email
-                var users = await _userRepository.FindAsync(u => u.Email.ToLower() == request.Email.ToLower());
+                var users = await _userRepository.FindAsync(u => u.Email != null && u.Email.ToLower() == request.Email.ToLower());
                 var user = users.FirstOrDefault();
 
                 if (user == null)
@@ -97,8 +97,8 @@ namespace BACKEND_CQRS.Application.Handler.Auth
                 var response = new LoginResponseDto
                 {
                     UserId = user.Id,
-                    Email = user.Email,
-                    Name = user.Name,
+                    Email = user.Email ?? string.Empty,
+                    Name = user.Name ?? string.Empty,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
                     AccessTokenExpires = DateTime.UtcNow.AddMinutes(accessTokenExpirationMinutes),

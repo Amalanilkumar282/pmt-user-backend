@@ -27,6 +27,32 @@ namespace BACKEND_CQRS.Api.Controllers
             return Ok(result);
         }
 
+        // 🔹 GET: api/team/project/{projectId}/v2
+        // V2 endpoint with proper nullable email handling for sprint planning
+        [HttpGet("project/{projectId:guid}/v2")]
+        public async Task<ActionResult<List<TeamDetailsV2Dto>>> GetTeamsByProjectIdV2(Guid projectId)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetTeamsByProjectIdV2Query(projectId));
+                return Ok(new
+                {
+                    succeeded = true,
+                    statusCode = 200,
+                    data = result
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    succeeded = false,
+                    statusCode = 500,
+                    message = "Internal server error - Please try again later"
+                });
+            }
+        }
+
         // 🔹 GET: api/team/user/{userId}
         //[HttpGet("user/{userId:int}")]
         //public async Task<ActionResult<List<TeamDto>>> GetTeamsByUserId(int userId)

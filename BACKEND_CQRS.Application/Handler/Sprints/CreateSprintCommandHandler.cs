@@ -9,7 +9,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BACKEND_CQRS.Application.Handler.Sprints 
+namespace BACKEND_CQRS.Application.Handler.Sprints
 {
     public class CreateSprintCommandHandler : IRequestHandler<CreateSprintCommand, ApiResponse<CreateSprintDto>>
     {
@@ -25,7 +25,7 @@ namespace BACKEND_CQRS.Application.Handler.Sprints
         public async Task<ApiResponse<CreateSprintDto>> Handle(CreateSprintCommand request, CancellationToken cancellationToken)
         {
             var sprint = _mapper.Map<Sprint>(request);
-            sprint.Id = Guid.NewGuid(); // Always generate new Id
+            sprint.Id = Guid.NewGuid(); // Auto-generate ID
             sprint.Name = request.SprintName;
             sprint.TeamId = request.TeamAssigned;
             sprint.ProjectId = request.ProjectId;
