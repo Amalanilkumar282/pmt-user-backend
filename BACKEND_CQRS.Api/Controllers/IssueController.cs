@@ -223,7 +223,15 @@ namespace BACKEND_CQRS.Api.Controllers
                 return result;
             }
 
-            #endregion
+
+        [HttpGet("project/{projectId}/activity-summary")]
+        public async Task<ApiResponse<Dictionary<string, int>>> GetIssueActivitySummary([FromRoute] Guid projectId)
+        {
+            var query = new GetIssueActivitySummaryByProjectQuery(projectId);
+            return await _mediator.Send(query);
         }
+
+        #endregion
+    }
     }
 
