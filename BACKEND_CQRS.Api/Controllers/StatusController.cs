@@ -107,5 +107,52 @@ namespace BACKEND_CQRS.Api.Controllers
                         "An unexpected error occurred while fetching the status. Please contact support if the issue persists."));
             }
         }
+
+        /// <summary>
+        /// Get all statuses used in a specific project
+        /// </summary>
+        /// <param name="projectId">The project ID</param>
+        /// <returns>List of statuses used in the project's boards</returns>
+        /// <response code="200">Returns the list of statuses (may be empty if no statuses are configured)</response>
+        /// <response code="400">If the project ID is invalid</response>
+        /// <response code="500">If a server error occurs</response>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET /api/status/by-project/3fa85f64-5717-4562-b3fc-2c963f66afa6
+        /// 
+        /// This endpoint returns all distinct statuses that are configured in the project's board columns.
+        /// Statuses are retrieved from the board columns associated with the project's active boards.
+        /// </remarks>
+        [HttpGet("by-project/{projectId}")]
+        [ProducesResponseType(typeof(ApiResponse<List<StatusDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<StatusDto>>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<List<StatusDto>>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ApiResponse<List<StatusDto>>>> GetStatusesByProjectId(Guid projectId)
+        {
+            try
+            {
+                // Validate input
+                if (projectId == Guid.Empty)
+                {
+                    _logger.LogWarning("Empty project ID provided");
+                    return BadRequest(ApiResponse<List<StatusDto>>.Fail("Invalid project ID. Project ID cannot be empty."));
+                }
+
+                _logger.LogInformation("API request received to fetch statuses for project: {ProjectId}", projectId);
+
+                var result = await _mediator.Send(new GetStatusesByProjectIdQuery(projectId));
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred in StatusController.GetStatusesByProjectId for project: {ProjectId}", projectId);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse<List<StatusDto>>.Fail(
+                        "An unexpected error occurred while fetching statuses for the project. Please contact support if the issue persists."));
+            }
+        }
     }
 }
