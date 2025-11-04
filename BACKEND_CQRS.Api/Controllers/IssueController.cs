@@ -27,11 +27,34 @@ namespace BACKEND_CQRS.Api.Controllers
             return newIssue;
         }
 
-        [HttpPut]
-        public async Task<ApiResponse<Guid>> EditIssue([FromBody] EditIssueCommand command)
+        [HttpPut("{id}")]
+        public async Task<ApiResponse<Guid>> EditIssue([FromRoute] Guid id, [FromBody] EditIssueCommand command)
         {
+            command.Id = id; // Set the ID from route parameter
             var result = await _mediator.Send(command);
             return result;
+        }
+
+        [HttpPut("{issueId}/dates")]
+        public async Task<ApiResponse<Guid>> UpdateIssueDates([FromRoute] Guid issueId, [FromBody] UpdateIssueDatesCommand command)
+        {
+            command.IssueId = issueId; // Set the ID from route parameter
+            var result = await _mediator.Send(command);
+            return result;
+        }
+        
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteIssue(Guid id)
+        {
+            var command = new DeleteIssueCommand(id);
+            var result = await _mediator.Send(command);
+
+            if (result.Status != 200)
+            {
+                return NotFound(result);
+            }
+
+            return Ok(result);
         }
 
         [HttpGet("project/{projectId}/issues")]
@@ -93,6 +116,13 @@ namespace BACKEND_CQRS.Api.Controllers
             return await _mediator.Send(query);
         }
 
+        [HttpGet("sprint/{sprintId}/status-count")]
+        public async Task<ApiResponse<Dictionary<string, int>>> GetStatusCountBySprint([FromRoute] Guid sprintId)
+        {
+            var query = new GetIssueCountByStatusBySprintQuery(sprintId);
+            return await _mediator.Send(query);
+        }
+
         [HttpGet("user/{userId}")]
         public async Task<ApiResponse<List<IssueDto>>> GetIssuesByUser([FromRoute] int userId)
         {
@@ -104,6 +134,30 @@ namespace BACKEND_CQRS.Api.Controllers
         public async Task<ApiResponse<List<IssueDto>>> GetIssuesByEpic([FromRoute] Guid epicId)
         {
             var query = new GetIssuesByEpicIdQuery(epicId);
+            return await _mediator.Send(query);
+        }
+
+        [HttpGet("project/{projectId}/status-count")]
+        public async Task<ApiResponse<Dictionary<string, int>>> GetStatusCountByProject([FromRoute] Guid projectId)
+        {
+            var query = new GetIssueCountByStatusByProjectQuery(projectId);
+            return await _mediator.Send(query);
+        }
+        [HttpGet("project/{projectId}/recent")]
+        public async Task<ActionResult<ApiResponse<object>>> GetRecentIssuesByProjectId(Guid projectId, [FromQuery] int count = 6)
+        {
+            var response = await _mediator.Send(new GetRecentIssuesQuery
+            {
+                ProjectId = projectId,
+                Count = count
+            });
+
+            return Ok(response);
+
+        [HttpGet("project/{projectId}/statuses")]
+        public async Task<ApiResponse<List<StatusDto>>> GetStatusesByProject([FromRoute] Guid projectId)
+        {
+            var query = new GetStatusesByProjectQuery(projectId);
             return await _mediator.Send(query);
         }
     }

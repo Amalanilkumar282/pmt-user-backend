@@ -37,8 +37,8 @@ namespace BACKEND_CQRS.Infrastructure.Services
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Name, user.Name ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("is_active", user.IsActive?.ToString() ?? "false"),
-                new Claim("is_super_admin", user.IsSuperAdmin?.ToString() ?? "false"),
+                new Claim("is_active", user.IsActive.ToString() ?? "false"),
+                new Claim("is_super_admin", user.IsSuperAdmin.ToString() ?? "false"),
                 new Claim(ClaimTypes.Role, user.IsSuperAdmin == true ? "SuperAdmin" : "User")
             };
 

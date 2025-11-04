@@ -44,7 +44,7 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
 
-        [Column("Label")]
+        [Column("labels")]
         public List<string>? Label { get; set; }
 
         // 🔹 Lead is now a ProjectMember, not a User
@@ -75,6 +75,8 @@ namespace BACKEND_CQRS.Domain.Entities
         public ICollection<Board> Boards { get; set; }
         public ICollection<ProjectMembers> ProjectMembers { get; set; }
         public ICollection<Channel> Channels { get; set; }
+
+        public ICollection<Sprint>? Sprints { get; set; }
     }
 }
 

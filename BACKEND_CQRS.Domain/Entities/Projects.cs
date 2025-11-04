@@ -67,7 +67,7 @@ namespace BACKEND_CQRS.Domain.Entities
         public DateTimeOffset? UpdatedAt { get; set; }   //change to DateTime
 
         [Column("metadata", TypeName = "jsonb")]
-        public string Metadata { get; set; }
+        public string? Metadata { get; set; }
 
         [Column("deleted_at")]
         public DateTimeOffset? DeletedAt { get; set; } //change to DateTime
@@ -111,6 +111,7 @@ namespace BACKEND_CQRS.Domain.Entities
 
         public ICollection<Teams> Teams { get; set; }
 
+
         public ICollection<Board> Boards { get; set; }
 
         public ICollection<ProjectMembers> ProjectMembers { get; set; }
@@ -124,6 +125,10 @@ namespace BACKEND_CQRS.Domain.Entities
         public ICollection<JiraAuthorization> JiraAuthorizations { get; set; }
 
         public ICollection<CustomField> CustomFields { get; set; }
+
+        public ICollection<StarredProjects>? StarredProjects { get; set; }
+
+
 
         // ForeignKey 
     }

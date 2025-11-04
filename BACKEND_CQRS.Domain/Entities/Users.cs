@@ -16,10 +16,9 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("id")]
         public int Id { get; set; }
 
-        [Required]
         [MaxLength(255)]
         [Column("email")]
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         [MaxLength(1024)]
         [Column("password_hash")]
@@ -34,10 +33,10 @@ namespace BACKEND_CQRS.Domain.Entities
         public string? AvatarUrl { get; set; }
 
         [Column("is_active")]
-        public bool IsActive { get; set; } = true;
+        public bool? IsActive { get; set; } = true;
 
         [Column("is_super_admin")]
-        public bool IsSuperAdmin { get; set; } = false;
+        public bool? IsSuperAdmin { get; set; } = false;
 
         [Column("last_login")]
         public DateTime? LastLogin { get; set; }
@@ -58,6 +57,7 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("type")]
         public string? Type { get; set; }
 
+        // Audit fields - now exist in the database
         [Column("created_by")]
         public int? CreatedBy { get; set; }
 
@@ -70,7 +70,7 @@ namespace BACKEND_CQRS.Domain.Entities
         [Column("is_deleted")]
         public bool IsDeleted { get; set; } = false;
 
-        // Navigation properties
+        // Self-referencing navigation properties
         [ForeignKey("CreatedBy")]
         public Users? CreatedByUser { get; set; }
 
@@ -82,7 +82,9 @@ namespace BACKEND_CQRS.Domain.Entities
 
         public ICollection<ProjectMembers> ProjectMembers { get; set; }
         public ICollection<Projects> ManagedProjects { get; set; }
-        public ICollection<Teams> LeadTeams { get; set; }
+         
         public ICollection<DeliveryUnit> ManagedDeliveryUnits { get; set; }
+
+        public ICollection<StarredProjects>? StarredProjects { get; set; }
     }
 }

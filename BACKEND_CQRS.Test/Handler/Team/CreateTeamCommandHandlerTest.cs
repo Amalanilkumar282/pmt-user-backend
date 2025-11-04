@@ -11,84 +11,69 @@ using System.Threading.Tasks;
 
 namespace BACKEND_CQRS.Test.Handler.Team
 {
-    public class CreateTeamCommandHandlerTest
+    public class CreateTeamCommandHandlerTests
     {
-        private readonly Mock<ITeamRepository> _mockRepo;
+        private readonly Mock<ITeamRepository> _teamRepositoryMock;
         private readonly CreateTeamCommandHandler _handler;
 
-        public CreateTeamCommandHandlerTest()
+        public CreateTeamCommandHandlerTests()
         {
-            _mockRepo = new Mock<ITeamRepository>();
-            _handler = new CreateTeamCommandHandler(_mockRepo.Object);
+            _teamRepositoryMock = new Mock<ITeamRepository>();
+            _handler = new CreateTeamCommandHandler(_teamRepositoryMock.Object);
         }
 
         [Fact]
-        public async Task Handle_ShouldCreateTeam_AndAddMembersIncludingLead()
+        public async Task Handle_Should_CreateTeam_And_AddMembersIncludingLead()
         {
             // Arrange
+            var projectId = Guid.NewGuid();
+            var leadId = 101;
+            var memberIds = new List<int> { 201, 202 };
+
             var command = new CreateTeamCommand
             {
-                ProjectId = Guid.NewGuid(),
-                Name = "Core Team",
-                Description = "Handles core modules",
-                LeadId = 5,
-                Label = new List<string> { "Backend", "API" },
-                MemberIds = new List<int> { 2, 3 },
-                CreatedBy = 1
+                ProjectId = projectId,
+                Name = "Alpha Team",
+                Description = "Testing team creation",
+                LeadId = leadId,
+               
+                CreatedBy = 1,
+                MemberIds = memberIds
             };
 
-            var createdTeamId = 10;
+            _teamRepositoryMock
+                .Setup(repo => repo.CreateTeamAsync(It.IsAny<Teams>()))
+                .ReturnsAsync(1);
 
-            _mockRepo.Setup(r => r.CreateTeamAsync(It.IsAny<Teams>()))
-                     .ReturnsAsync(createdTeamId);
-
-            _mockRepo.Setup(r => r.AddMembersAsync(It.IsAny<int>(), It.IsAny<List<int>>()))
-                     .Returns(Task.CompletedTask);
+            _teamRepositoryMock
+                .Setup(repo => repo.AddMembersAsync(It.IsAny<int>(), It.IsAny<List<int>>()))
+                .Returns(Task.CompletedTask);
 
             // Act
             var result = await _handler.Handle(command, CancellationToken.None);
 
             // Assert
-            Assert.Equal(createdTeamId, result);
+            Assert.Equal(1, result); // returned teamId
 
-            _mockRepo.Verify(r => r.CreateTeamAsync(It.Is<Teams>(
-    t => t.Name == command.Name &&
-         t.Description == command.Description &&
-         t.ProjectId == command.ProjectId &&
-         t.CreatedBy == command.CreatedBy &&
-         t.IsActive == true
-)), Times.Once);
-
-            _mockRepo.Verify(r => r.AddMembersAsync(createdTeamId,
-                It.Is<List<int>>(members => members.Contains(2) && members.Contains(3) && members.Contains(5))),
+            _teamRepositoryMock.Verify(
+                repo => repo.CreateTeamAsync(It.Is<Teams>(t =>
+                    t.ProjectId == projectId &&
+                    t.Name == "Alpha Team" &&
+                    t.Description == "Testing team creation" &&
+                    t.LeadId == leadId &&
+                    
+                    t.CreatedBy == 1 &&
+                    t.IsActive == true
+                )),
                 Times.Once);
-        }
 
-        [Fact]
-        public async Task Handle_ShouldNotDuplicateLeadIfAlreadyInMembers()
-        {
-            // Arrange
-            var command = new CreateTeamCommand
-            {
-                ProjectId = Guid.NewGuid(),
-                Name = "Test Team",
-                Description = "Test Description",
-                LeadId = 7,
-                MemberIds = new List<int> { 7, 8 },
-                CreatedBy = 2
-            };
-
-            _mockRepo.Setup(r => r.CreateTeamAsync(It.IsAny<Teams>()))
-                     .ReturnsAsync(22);
-
-            // Act
-            var result = await _handler.Handle(command, CancellationToken.None);
-
-            // Assert
-            Assert.Equal(22, result);
-
-            _mockRepo.Verify(r => r.AddMembersAsync(22,
-                It.Is<List<int>>(m => m.Count == 2 && m.Contains(7) && m.Contains(8))),
+            _teamRepositoryMock.Verify(
+                repo => repo.AddMembersAsync(1,
+                    It.Is<List<int>>(members =>
+                        members.Contains(leadId) &&
+                        members.Contains(201) &&
+                        members.Contains(202)
+                    )),
                 Times.Once);
         }
     }

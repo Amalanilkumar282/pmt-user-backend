@@ -88,5 +88,13 @@ namespace BACKEND_CQRS.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpPatch("{id}/complete")]
+        public async Task<ApiResponse<bool>> CompleteSprint([FromRoute] Guid id)
+        {
+            var command = new CompleteSprintCommand(id);
+            var result = await _mediator.Send(command);
+            return result;
+        }
     }
 }

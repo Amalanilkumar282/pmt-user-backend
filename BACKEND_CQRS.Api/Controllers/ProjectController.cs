@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace BACKEND_CQRS.Api.Controllers
 {
@@ -125,8 +127,6 @@ namespace BACKEND_CQRS.Api.Controllers
             return result;
         }
 
-
-
         [HttpGet("{projectId}/users")]
         public async Task<ApiResponse<List<ProjectUserDto>>> GetUsersByProject(Guid projectId)
         {
@@ -135,12 +135,29 @@ namespace BACKEND_CQRS.Api.Controllers
             return result;
         }
 
-        [HttpGet("recent")]
-        public async Task<ApiResponse<List<ProjectDto>>> GetRecentProjects([FromQuery] int take = 10)
+        [HttpGet("recent/{userId}")]
+        public async Task<ApiResponse<List<ProjectDto>>> GetRecentProjects(int userId, [FromQuery] int take = 10)
         {
-            var query = new GetRecentProjectsQuery(take);
+            _logger.LogInformation("Fetching recent projects for user {UserId}", userId);
+
+            var query = new GetRecentProjectsQuery(userId, take);
             var result = await _mediator.Send(query);
             return result;
         }
+
+
+        [HttpDelete("delete")]
+        public async Task<ActionResult<ApiResponse<string>>> DeleteMember(DeleteProjectMemberCommand command)
+        {
+            var response = await _mediator.Send(command);
+            return Ok(response);
+        }
+        [HttpPut("update")]
+        public async Task<ActionResult<ApiResponse<UpdateProjectMemberResponseDto>>> UpdateProjectMember(UpdateProjectMemberCommand command)
+        {
+            var response = await _mediator.Send(command);
+            return Ok(response);
+        }
+
     }
 }

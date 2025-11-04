@@ -3,10 +3,10 @@ using BACKEND_CQRS.Application.Query;
 using BACKEND_CQRS.Application.Dto;
 using BACKEND_CQRS.Application.Wrapper;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BACKEND_CQRS.Api.Controllers
 {
@@ -16,6 +16,7 @@ namespace BACKEND_CQRS.Api.Controllers
     public class LabelController : ControllerBase
     {
         private readonly IMediator _mediator;
+
         public LabelController(IMediator mediator)
         {
             _mediator = mediator;
