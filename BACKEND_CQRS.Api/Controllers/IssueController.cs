@@ -43,7 +43,7 @@ namespace BACKEND_CQRS.Api.Controllers
             var result = await _mediator.Send(command);
             return result;
         }
-        
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteIssue(Guid id)
         {
@@ -169,7 +169,7 @@ namespace BACKEND_CQRS.Api.Controllers
         /// </summary>
         [HttpPost("{issueId}/comments")]
         public async Task<ApiResponse<CreateIssueCommentDto>> CreateComment(
-            [FromRoute] Guid issueId, 
+            [FromRoute] Guid issueId,
             [FromBody] CreateIssueCommentCommand command)
         {
             command.IssueId = issueId;
@@ -204,7 +204,7 @@ namespace BACKEND_CQRS.Api.Controllers
         /// </summary>
         [HttpPut("comments/{commentId}")]
         public async Task<ApiResponse<Guid>> UpdateComment(
-            [FromRoute] Guid commentId, 
+            [FromRoute] Guid commentId,
             [FromBody] UpdateIssueCommentCommand command)
         {
             command.Id = commentId;
@@ -223,6 +223,24 @@ namespace BACKEND_CQRS.Api.Controllers
             return result;
         }
 
-        #endregion
+
+        [HttpGet("project/{projectId}/activity-summary")]
+        public async Task<ApiResponse<Dictionary<string, int>>> GetIssueActivitySummaryByProjectId([FromRoute] Guid projectId)
+        {
+            var query = new GetIssueActivitySummaryByProjectQuery(projectId);
+            return await _mediator.Send(query);
+        }
+
+        [HttpGet("project/{projectId}/sprint/{sprintId}/activity-summary")]
+        public async Task<ApiResponse<Dictionary<string, int>>> GetIssueActivitySummaryBySprintId(
+         [FromRoute] Guid projectId,
+        [FromRoute] Guid sprintId)
+        {
+            var query = new GetIssueActivitySummaryBysprintIdQuery(projectId, sprintId);
+            return await _mediator.Send(query);
+        }
     }
+    #endregion
+
 }
+
