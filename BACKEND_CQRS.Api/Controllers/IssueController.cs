@@ -58,6 +58,18 @@ namespace BACKEND_CQRS.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// V2 endpoint that properly handles null values for SprintId.
+        /// Use this to unassign issues from sprints by sending "sprintId": null.
+        /// </summary>
+        [HttpPut("{id}/v2")]
+        public async Task<ApiResponse<Guid>> EditIssueV2([FromRoute] Guid id, [FromBody] EditIssueCommandV2 command)
+        {
+            command.Id = id; // Set the ID from route parameter
+            var result = await _mediator.Send(command);
+            return result;
+        }
+
         [HttpGet("project/{projectId}/issues")]
         public async Task<ApiResponse<List<IssueDto>>> GetIssuesByProject(
      [FromRoute] Guid projectId)

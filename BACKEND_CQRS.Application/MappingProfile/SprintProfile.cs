@@ -17,7 +17,8 @@ namespace BACKEND_CQRS.Application.MappingProfile
             CreateMap<CreateSprintCommand, Sprint>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.SprintName))
                 .ForMember(dest => dest.TeamId, opt => opt.MapFrom(src => src.TeamAssigned))
-                .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId)); // Removed Id mapping
+                .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId))
+                .ForMember(dest => dest.Id, opt => opt.Ignore()); // ID is auto-generated
 
             CreateMap<Sprint, SprintDto>().ReverseMap();
         }
