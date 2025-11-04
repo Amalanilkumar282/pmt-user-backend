@@ -40,6 +40,7 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<DeliveryUnit> DeliveryUnits { get; set; }
         public DbSet<ProjectStatus> ProjectStatuses { get; set; }
 
+        public DbSet<IssueComment> IssueComments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -282,6 +283,40 @@ namespace BACKEND_CQRS.Infrastructure.Context
                 entity.HasOne(msg => msg.Updater)
                       .WithMany()
                       .HasForeignKey(msg => msg.UpdatedBy)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configure IssueComment relationships with Users and Issue
+            modelBuilder.Entity<IssueComment>(entity =>
+            {
+                // Issue relationship
+                entity.HasOne(ic => ic.Issue)
+                      .WithMany()
+                      .HasForeignKey(ic => ic.IssueId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Author relationship
+                entity.HasOne(ic => ic.Author)
+                      .WithMany()
+                      .HasForeignKey(ic => ic.AuthorId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // MentionedUser relationship
+                entity.HasOne(ic => ic.MentionedUser)
+                      .WithMany()
+                      .HasForeignKey(ic => ic.MentionId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Creator relationship
+                entity.HasOne(ic => ic.Creator)
+                      .WithMany()
+                      .HasForeignKey(ic => ic.CreatedBy)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Updater relationship
+                entity.HasOne(ic => ic.Updater)
+                      .WithMany()
+                      .HasForeignKey(ic => ic.UpdatedBy)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
