@@ -143,6 +143,16 @@ namespace BACKEND_CQRS.Api.Controllers
             var query = new GetIssueCountByStatusByProjectQuery(projectId);
             return await _mediator.Send(query);
         }
+        [HttpGet("project/{projectId}/recent")]
+        public async Task<ActionResult<ApiResponse<object>>> GetRecentIssuesByProjectId(Guid projectId, [FromQuery] int count = 6)
+        {
+            var response = await _mediator.Send(new GetRecentIssuesQuery
+            {
+                ProjectId = projectId,
+                Count = count
+            });
+
+            return Ok(response);
 
         [HttpGet("project/{projectId}/statuses")]
         public async Task<ApiResponse<List<StatusDto>>> GetStatusesByProject([FromRoute] Guid projectId)
