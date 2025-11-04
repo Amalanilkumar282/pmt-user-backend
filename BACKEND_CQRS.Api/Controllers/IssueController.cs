@@ -43,7 +43,7 @@ namespace BACKEND_CQRS.Api.Controllers
             var result = await _mediator.Send(command);
             return result;
         }
-        
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteIssue(Guid id)
         {
@@ -154,75 +154,76 @@ namespace BACKEND_CQRS.Api.Controllers
             });
 
             return Ok(response);
-
-        [HttpGet("project/{projectId}/statuses")]
-        public async Task<ApiResponse<List<StatusDto>>> GetStatusesByProject([FromRoute] Guid projectId)
-        {
-            var query = new GetStatusesByProjectQuery(projectId);
-            return await _mediator.Send(query);
         }
+            [HttpGet("project/{projectId}/statuses")]
+            public async Task<ApiResponse<List<StatusDto>>> GetStatusesByProject([FromRoute] Guid projectId)
+            {
+                var query = new GetStatusesByProjectQuery(projectId);
+                return await _mediator.Send(query);
+            }
 
-        #region Issue Comments
+            #region Issue Comments
 
-        /// <summary>
-        /// Create a new comment for an issue
-        /// </summary>
-        [HttpPost("{issueId}/comments")]
-        public async Task<ApiResponse<CreateIssueCommentDto>> CreateComment(
-            [FromRoute] Guid issueId, 
-            [FromBody] CreateIssueCommentCommand command)
-        {
-            command.IssueId = issueId;
-            var result = await _mediator.Send(command);
-            return result;
+            /// <summary>
+            /// Create a new comment for an issue
+            /// </summary>
+            [HttpPost("{issueId}/comments")]
+            public async Task<ApiResponse<CreateIssueCommentDto>> CreateComment(
+                [FromRoute] Guid issueId,
+                [FromBody] CreateIssueCommentCommand command)
+            {
+                command.IssueId = issueId;
+                var result = await _mediator.Send(command);
+                return result;
+            }
+
+            /// <summary>
+            /// Get all comments for a specific issue
+            /// </summary>
+            [HttpGet("{issueId}/comments")]
+            public async Task<ApiResponse<List<IssueCommentDto>>> GetCommentsByIssueId([FromRoute] Guid issueId)
+            {
+                var query = new GetCommentsByIssueIdQuery(issueId);
+                var result = await _mediator.Send(query);
+                return result;
+            }
+
+            /// <summary>
+            /// Get a specific comment by ID
+            /// </summary>
+            [HttpGet("comments/{commentId}")]
+            public async Task<ApiResponse<IssueCommentDto>> GetCommentById([FromRoute] Guid commentId)
+            {
+                var query = new GetCommentByIdQuery(commentId);
+                var result = await _mediator.Send(query);
+                return result;
+            }
+
+            /// <summary>
+            /// Update an existing comment
+            /// </summary>
+            [HttpPut("comments/{commentId}")]
+            public async Task<ApiResponse<Guid>> UpdateComment(
+                [FromRoute] Guid commentId,
+                [FromBody] UpdateIssueCommentCommand command)
+            {
+                command.Id = commentId;
+                var result = await _mediator.Send(command);
+                return result;
+            }
+
+            /// <summary>
+            /// Delete a comment
+            /// </summary>
+            [HttpDelete("comments/{commentId}")]
+            public async Task<ApiResponse<Guid>> DeleteComment([FromRoute] Guid commentId)
+            {
+                var command = new DeleteIssueCommentCommand(commentId);
+                var result = await _mediator.Send(command);
+                return result;
+            }
+
+            #endregion
         }
-
-        /// <summary>
-        /// Get all comments for a specific issue
-        /// </summary>
-        [HttpGet("{issueId}/comments")]
-        public async Task<ApiResponse<List<IssueCommentDto>>> GetCommentsByIssueId([FromRoute] Guid issueId)
-        {
-            var query = new GetCommentsByIssueIdQuery(issueId);
-            var result = await _mediator.Send(query);
-            return result;
-        }
-
-        /// <summary>
-        /// Get a specific comment by ID
-        /// </summary>
-        [HttpGet("comments/{commentId}")]
-        public async Task<ApiResponse<IssueCommentDto>> GetCommentById([FromRoute] Guid commentId)
-        {
-            var query = new GetCommentByIdQuery(commentId);
-            var result = await _mediator.Send(query);
-            return result;
-        }
-
-        /// <summary>
-        /// Update an existing comment
-        /// </summary>
-        [HttpPut("comments/{commentId}")]
-        public async Task<ApiResponse<Guid>> UpdateComment(
-            [FromRoute] Guid commentId, 
-            [FromBody] UpdateIssueCommentCommand command)
-        {
-            command.Id = commentId;
-            var result = await _mediator.Send(command);
-            return result;
-        }
-
-        /// <summary>
-        /// Delete a comment
-        /// </summary>
-        [HttpDelete("comments/{commentId}")]
-        public async Task<ApiResponse<Guid>> DeleteComment([FromRoute] Guid commentId)
-        {
-            var command = new DeleteIssueCommentCommand(commentId);
-            var result = await _mediator.Send(command);
-            return result;
-        }
-
-        #endregion
     }
-}
+
