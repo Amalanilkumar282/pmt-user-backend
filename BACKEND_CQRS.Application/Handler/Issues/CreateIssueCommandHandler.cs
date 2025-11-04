@@ -27,6 +27,7 @@ namespace BACKEND_CQRS.Application.Handler.Issues
             var issue = _mapper.Map<Issue>(request);
             issue.Id = Guid.NewGuid();
             issue.Type = request.IssueType;
+            issue.StatusId = request.StatusId; // Set StatusId from request
             issue.CreatedAt = DateTimeOffset.UtcNow;
 
             _context.Issues.Add(issue);

@@ -35,6 +35,8 @@ namespace BACKEND_CQRS.Application.Dto
 
         public string? AttachmentUrl { get; set; }
 
+        public int? StatusId { get; set; } // Added StatusId
+
         public string? Labels { get; set; } // Stores labels as JSON string
     }
 }
