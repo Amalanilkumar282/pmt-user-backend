@@ -35,6 +35,28 @@ namespace BACKEND_CQRS.Api.Controllers
             return result;
         }
 
+        [HttpPut("{issueId}/dates")]
+        public async Task<ApiResponse<Guid>> UpdateIssueDates([FromRoute] Guid issueId, [FromBody] UpdateIssueDatesCommand command)
+        {
+            command.IssueId = issueId; // Set the ID from route parameter
+            var result = await _mediator.Send(command);
+            return result;
+        }
+        
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteIssue(Guid id)
+        {
+            var command = new DeleteIssueCommand(id);
+            var result = await _mediator.Send(command);
+
+            if (result.Status != 200)
+            {
+                return NotFound(result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpGet("project/{projectId}/issues")]
         public async Task<ApiResponse<List<IssueDto>>> GetIssuesByProject(
      [FromRoute] Guid projectId)
@@ -119,6 +141,13 @@ namespace BACKEND_CQRS.Api.Controllers
         public async Task<ApiResponse<Dictionary<string, int>>> GetStatusCountByProject([FromRoute] Guid projectId)
         {
             var query = new GetIssueCountByStatusByProjectQuery(projectId);
+            return await _mediator.Send(query);
+        }
+
+        [HttpGet("project/{projectId}/statuses")]
+        public async Task<ApiResponse<List<StatusDto>>> GetStatusesByProject([FromRoute] Guid projectId)
+        {
+            var query = new GetStatusesByProjectQuery(projectId);
             return await _mediator.Send(query);
         }
     }
