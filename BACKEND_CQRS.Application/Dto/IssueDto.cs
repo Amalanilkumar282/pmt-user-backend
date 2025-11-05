@@ -52,5 +52,8 @@ namespace BACKEND_CQRS.Application.Dto
         public string? Labels { get; set; }
         
         public string? AttachmentUrl { get; set; }
+
+        public DateTimeOffset? UpdatedAt { get; set; }
+
     }
 }
