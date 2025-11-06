@@ -5,6 +5,7 @@ using BACKEND_CQRS.Application.Query.Teams;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using System.Text.Json;
 
 namespace BACKEND_CQRS.Test.Controllers
 {
@@ -108,10 +109,12 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
-            dynamic response = okResult.Value;
-            Assert.True(response.succeeded);
-            Assert.Equal(200, (int)response.statusCode);
-            Assert.NotNull(response.data);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.True(response["succeeded"].GetBoolean());
+            Assert.Equal(200, response["statusCode"].GetInt32());
+            Assert.NotNull(response["data"]);
         }
 
         [Fact]
@@ -129,9 +132,12 @@ namespace BACKEND_CQRS.Test.Controllers
             // Assert
             var statusCodeResult = Assert.IsType<ObjectResult>(result.Result);
             Assert.Equal(500, statusCodeResult.StatusCode);
-            dynamic response = statusCodeResult.Value;
-            Assert.False(response.succeeded);
-            Assert.Equal(500, (int)response.statusCode);
+            
+            var json = JsonSerializer.Serialize(statusCodeResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.False(response["succeeded"].GetBoolean());
+            Assert.Equal(500, response["statusCode"].GetInt32());
         }
 
         [Fact]
@@ -149,8 +155,10 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
-            dynamic response = okResult.Value;
-            Assert.True(response.succeeded);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.True(response["succeeded"].GetBoolean());
         }
 
         #endregion
@@ -183,10 +191,12 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            dynamic response = okResult.Value;
-            Assert.True(response.success);
-            Assert.Equal("Team created successfully.", (string)response.message);
-            Assert.Equal(expectedTeamId, (int)response.teamId);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.True(response["success"].GetBoolean());
+            Assert.Equal("Team created successfully.", response["message"].GetString());
+            Assert.Equal(expectedTeamId, response["teamId"].GetInt32());
         }
 
         [Fact]
@@ -200,9 +210,11 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            dynamic response = badRequestResult.Value;
-            Assert.False(response.success);
-            Assert.Contains("Invalid request data", (string)response.message);
+            var json = JsonSerializer.Serialize(badRequestResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.False(response["success"].GetBoolean());
+            Assert.Contains("Invalid request data", response["message"].GetString());
         }
 
         [Fact]
@@ -221,9 +233,11 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            dynamic response = badRequestResult.Value;
-            Assert.False(response.success);
-            Assert.Contains("ProjectId is required", (string)response.message);
+            var json = JsonSerializer.Serialize(badRequestResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.False(response["success"].GetBoolean());
+            Assert.Contains("ProjectId is required", response["message"].GetString());
         }
 
         [Fact]
@@ -242,9 +256,11 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            dynamic response = badRequestResult.Value;
-            Assert.False(response.success);
-            Assert.Contains("Team name is required", (string)response.message);
+            var json = JsonSerializer.Serialize(badRequestResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.False(response["success"].GetBoolean());
+            Assert.Contains("Team name is required", response["message"].GetString());
         }
 
         [Fact]
@@ -263,8 +279,10 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            dynamic response = badRequestResult.Value;
-            Assert.False(response.success);
+            var json = JsonSerializer.Serialize(badRequestResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.False(response["success"].GetBoolean());
         }
 
         [Fact]
@@ -283,9 +301,11 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            dynamic response = badRequestResult.Value;
-            Assert.False(response.success);
-            Assert.Contains("CreatedBy is required", (string)response.message);
+            var json = JsonSerializer.Serialize(badRequestResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.False(response["success"].GetBoolean());
+            Assert.Contains("CreatedBy is required", response["message"].GetString());
         }
 
         [Fact]
@@ -308,8 +328,10 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            dynamic response = okResult.Value;
-            Assert.True(response.success);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.True(response["success"].GetBoolean());
         }
 
         [Fact]
@@ -358,8 +380,10 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            dynamic response = okResult.Value;
-            Assert.Equal("Team deleted successfully", (string)response.Message);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.Equal("Team deleted successfully", response["Message"].GetString());
         }
 
         [Fact]
@@ -376,8 +400,10 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            dynamic response = notFoundResult.Value;
-            Assert.Equal("Team not found", (string)response.Message);
+            var json = JsonSerializer.Serialize(notFoundResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.Equal("Team not found", response["Message"].GetString());
         }
 
         [Fact]
@@ -498,8 +524,10 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            dynamic response = okResult.Value;
-            Assert.Equal("Team updated successfully.", (string)response.message);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.Equal("Team updated successfully.", response["message"].GetString());
         }
 
         [Fact]
@@ -514,8 +542,10 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            dynamic response = badRequestResult.Value;
-            Assert.Equal("Invalid request data.", (string)response.message);
+            var json = JsonSerializer.Serialize(badRequestResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.Equal("Invalid request data.", response["message"].GetString());
         }
 
         [Fact]
@@ -533,8 +563,10 @@ namespace BACKEND_CQRS.Test.Controllers
 
             // Assert
             var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            dynamic response = notFoundResult.Value;
-            Assert.Equal("Team not found.", (string)response.message);
+            var json = JsonSerializer.Serialize(notFoundResult.Value);
+            var response = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            
+            Assert.Equal("Team not found.", response["message"].GetString());
         }
 
         #endregion

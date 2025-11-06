@@ -24,14 +24,14 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
         private readonly Mock<IBoardRepository> _boardRepositoryMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<ILogger<GetBoardByIdQueryHandler>> _loggerMock;
-        private readonly Mock<ILogger<GetBoardColumnsByBoardIdQueryHandler>> _columnLoggerMock; // ADDED
+        private readonly Mock<ILogger<GetBoardColumnsByBoardIdQueryHandler>> _columnLoggerMock;
 
         public BoardQueryHandlerTests()
         {
             _boardRepositoryMock = new Mock<IBoardRepository>();
             _mapperMock = new Mock<IMapper>();
             _loggerMock = new Mock<ILogger<GetBoardByIdQueryHandler>>();
-            _columnLoggerMock = new Mock<ILogger<GetBoardColumnsByBoardIdQueryHandler>>(); // ADDED
+            _columnLoggerMock = new Mock<ILogger<GetBoardColumnsByBoardIdQueryHandler>>();
         }
 
         #region GetBoardByIdQueryHandler Tests
@@ -40,42 +40,42 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
         public async Task GetBoardByIdQueryHandler_WithValidId_ReturnsBoard()
         {
             // Arrange
-            var boardId = 1; // FIXED: Changed to int
+            var boardId = 1;
             var board = new Board
             {
-                Id = boardId, // FIXED: Now int
+                Id = boardId,
                 Name = "Main Board",
                 ProjectId = Guid.NewGuid(),
                 IsActive = true,
                 BoardColumns = new List<BoardColumn>
                 {
-                    new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "To Do", Position = 1 }, // FIXED: BoardColumnName
-                    new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "In Progress", Position = 2 }, // FIXED: BoardColumnName
-                    new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "Done", Position = 3 } // FIXED: BoardColumnName
+                    new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "To Do", Position = 1 },
+                    new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "In Progress", Position = 2 },
+                    new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "Done", Position = 3 }
                 }
             };
 
             var boardDto = new BoardWithColumnsDto
             {
-                Id = boardId, // FIXED: Now int
+                Id = boardId,
                 Name = board.Name,
                 ProjectId = board.ProjectId,
                 IsActive = board.IsActive,
                 Columns = new List<BoardColumnDto>
                 {
-                    new BoardColumnDto { Id = board.BoardColumns.ElementAt(0).Id, BoardColumnName = "To Do", Position = 1 }, // FIXED: BoardColumnName
-                    new BoardColumnDto { Id = board.BoardColumns.ElementAt(1).Id, BoardColumnName = "In Progress", Position = 2 }, // FIXED: BoardColumnName
-                    new BoardColumnDto { Id = board.BoardColumns.ElementAt(2).Id, BoardColumnName = "Done", Position = 3 } // FIXED: BoardColumnName
+                    new BoardColumnDto { Id = board.BoardColumns.ElementAt(0).Id, BoardColumnName = "To Do", Position = 1 },
+                    new BoardColumnDto { Id = board.BoardColumns.ElementAt(1).Id, BoardColumnName = "In Progress", Position = 2 },
+                    new BoardColumnDto { Id = board.BoardColumns.ElementAt(2).Id, BoardColumnName = "Done", Position = 3 }
                 }
             };
 
             _boardRepositoryMock
-                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false)) // FIXED: int boardId
+                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false))
                 .ReturnsAsync(board);
 
             _mapperMock.Setup(m => m.Map<BoardWithColumnsDto>(board)).Returns(boardDto);
 
-            var query = new GetBoardByIdQuery(boardId, false); // FIXED: Use constructor with int
+            var query = new GetBoardByIdQuery(boardId, false);
             var handler = new GetBoardByIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
             // Act
@@ -83,12 +83,12 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(boardId, result.Id); // FIXED: Compare ints
+            Assert.Equal(boardId, result.Id);
             Assert.Equal("Main Board", result.Name);
             Assert.Equal(3, result.Columns.Count);
-            Assert.Equal("To Do", result.Columns[0].BoardColumnName); // FIXED: BoardColumnName
+            Assert.Equal("To Do", result.Columns[0].BoardColumnName);
 
-            _boardRepositoryMock.Verify(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false), Times.Once); // FIXED: int boardId
+            _boardRepositoryMock.Verify(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false), Times.Once);
             _mapperMock.Verify(m => m.Map<BoardWithColumnsDto>(board), Times.Once);
         }
 
@@ -96,12 +96,12 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
         public async Task GetBoardByIdQueryHandler_WithNonExistentId_ReturnsNull()
         {
             // Arrange
-            var boardId = 999; // FIXED: Changed to int
+            var boardId = 999;
             _boardRepositoryMock
-                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false)) // FIXED: int boardId
+                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false))
                 .ReturnsAsync((Board?)null);
 
-            var query = new GetBoardByIdQuery(boardId, false); // FIXED: Use constructor with int
+            var query = new GetBoardByIdQuery(boardId, false);
             var handler = new GetBoardByIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
             // Act
@@ -109,17 +109,17 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
 
             // Assert
             Assert.Null(result);
-            _boardRepositoryMock.Verify(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false), Times.Once); // FIXED: int boardId
+            _boardRepositoryMock.Verify(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false), Times.Once);
         }
 
         [Fact]
         public async Task GetBoardByIdQueryHandler_WithIncludeInactive_ReturnsInactiveBoard()
         {
             // Arrange
-            var boardId = 1; // FIXED: Changed to int
+            var boardId = 1;
             var board = new Board
             {
-                Id = boardId, // FIXED: Now int
+                Id = boardId,
                 Name = "Inactive Board",
                 ProjectId = Guid.NewGuid(),
                 IsActive = false,
@@ -128,7 +128,7 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
 
             var boardDto = new BoardWithColumnsDto
             {
-                Id = boardId, // FIXED: Now int
+                Id = boardId,
                 Name = board.Name,
                 ProjectId = board.ProjectId,
                 IsActive = false,
@@ -136,12 +136,12 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
             };
 
             _boardRepositoryMock
-                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, true)) // FIXED: int boardId
+                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, true))
                 .ReturnsAsync(board);
 
             _mapperMock.Setup(m => m.Map<BoardWithColumnsDto>(board)).Returns(boardDto);
 
-            var query = new GetBoardByIdQuery(boardId, true); // FIXED: Use constructor with int
+            var query = new GetBoardByIdQuery(boardId, true);
             var handler = new GetBoardByIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
             // Act
@@ -149,21 +149,21 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(boardId, result.Id); // FIXED: Compare ints
+            Assert.Equal(boardId, result.Id);
             Assert.False(result.IsActive);
-            _boardRepositoryMock.Verify(repo => repo.GetBoardByIdWithColumnsAsync(boardId, true), Times.Once); // FIXED: int boardId
+            _boardRepositoryMock.Verify(repo => repo.GetBoardByIdWithColumnsAsync(boardId, true), Times.Once);
         }
 
         [Fact]
         public async Task GetBoardByIdQueryHandler_WithoutIncludeInactive_ReturnsNull()
         {
             // Arrange
-            var boardId = 2; // FIXED: Changed to int
+            var boardId = 2;
             _boardRepositoryMock
-                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false)) // FIXED: int boardId
+                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false))
                 .ReturnsAsync((Board?)null);
 
-            var query = new GetBoardByIdQuery(boardId, false); // FIXED: Use constructor with int
+            var query = new GetBoardByIdQuery(boardId, false);
             var handler = new GetBoardByIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
             // Act
@@ -177,10 +177,10 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
         public async Task GetBoardByIdQueryHandler_WithEmptyColumns_ReturnsEmptyList()
         {
             // Arrange
-            var boardId = 3; // FIXED: Changed to int
+            var boardId = 3;
             var board = new Board
             {
-                Id = boardId, // FIXED: Now int
+                Id = boardId,
                 Name = "Board without Columns",
                 ProjectId = Guid.NewGuid(),
                 IsActive = true,
@@ -189,7 +189,7 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
 
             var boardDto = new BoardWithColumnsDto
             {
-                Id = boardId, // FIXED: Now int
+                Id = boardId,
                 Name = board.Name,
                 ProjectId = board.ProjectId,
                 IsActive = true,
@@ -197,12 +197,12 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
             };
 
             _boardRepositoryMock
-                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false)) // FIXED: int boardId
+                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false))
                 .ReturnsAsync(board);
 
             _mapperMock.Setup(m => m.Map<BoardWithColumnsDto>(board)).Returns(boardDto);
 
-            var query = new GetBoardByIdQuery(boardId, false); // FIXED: Use constructor with int
+            var query = new GetBoardByIdQuery(boardId, false);
             var handler = new GetBoardByIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
             // Act
@@ -217,12 +217,12 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
         public async Task GetBoardByIdQueryHandler_ThrowsInvalidOperationException()
         {
             // Arrange
-            var boardId = 1; // FIXED: Changed to int
+            var boardId = 1;
             _boardRepositoryMock
-                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false)) // FIXED: int boardId
+                .Setup(repo => repo.GetBoardByIdWithColumnsAsync(boardId, false))
                 .ThrowsAsync(new InvalidOperationException("Database error"));
 
-            var query = new GetBoardByIdQuery(boardId, false); // FIXED: Use constructor with int
+            var query = new GetBoardByIdQuery(boardId, false);
             var handler = new GetBoardByIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
             // Act & Assert
@@ -238,29 +238,34 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
         public async Task GetBoardColumnsByBoardIdQueryHandler_WithColumns_ReturnsSuccessWithData()
         {
             // Arrange
-            var boardId = 1; // FIXED: Changed to int
+            var boardId = 1;
             var columns = new List<BoardColumn>
             {
-                new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "Backlog", Position = 1 }, // FIXED: BoardColumnName
-                new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "To Do", Position = 2 }, // FIXED: BoardColumnName
-                new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "Done", Position = 3 } // FIXED: BoardColumnName
+                new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "Backlog", Position = 1 },
+                new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "To Do", Position = 2 },
+                new BoardColumn { Id = Guid.NewGuid(), BoardColumnName = "Done", Position = 3 }
             };
 
             var columnDtos = new List<BoardColumnDto>
             {
-                new BoardColumnDto { Id = columns[0].Id, BoardColumnName = "Backlog", Position = 1 }, // FIXED: BoardColumnName
-                new BoardColumnDto { Id = columns[1].Id, BoardColumnName = "To Do", Position = 2 }, // FIXED: BoardColumnName
-                new BoardColumnDto { Id = columns[2].Id, BoardColumnName = "Done", Position = 3 } // FIXED: BoardColumnName
+                new BoardColumnDto { Id = columns[0].Id, BoardColumnName = "Backlog", Position = 1 },
+                new BoardColumnDto { Id = columns[1].Id, BoardColumnName = "To Do", Position = 2 },
+                new BoardColumnDto { Id = columns[2].Id, BoardColumnName = "Done", Position = 3 }
             };
 
+            // FIXED: Mock BoardExistsAsync to return true
             _boardRepositoryMock
-                .Setup(repo => repo.GetBoardColumnsAsync(boardId)) // FIXED: int boardId, correct method name
+                .Setup(repo => repo.BoardExistsAsync(boardId))
+                .ReturnsAsync(true);
+
+            _boardRepositoryMock
+                .Setup(repo => repo.GetBoardColumnsAsync(boardId))
                 .ReturnsAsync(columns);
 
             _mapperMock.Setup(m => m.Map<List<BoardColumnDto>>(columns)).Returns(columnDtos);
 
-            var query = new GetBoardColumnsByBoardIdQuery(boardId); // FIXED: Use constructor with int
-            var handler = new GetBoardColumnsByBoardIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _columnLoggerMock.Object); // FIXED: Added logger
+            var query = new GetBoardColumnsByBoardIdQuery(boardId);
+            var handler = new GetBoardColumnsByBoardIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _columnLoggerMock.Object);
 
             // Act
             var result = await handler.Handle(query, CancellationToken.None);
@@ -268,9 +273,10 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
             // Assert
             Assert.NotNull(result);
             Assert.Equal(3, result.Count);
-            Assert.Equal("Backlog", result[0].BoardColumnName); // FIXED: BoardColumnName
+            Assert.Equal("Backlog", result[0].BoardColumnName);
 
-            _boardRepositoryMock.Verify(repo => repo.GetBoardColumnsAsync(boardId), Times.Once); // FIXED: int boardId, correct method name
+            _boardRepositoryMock.Verify(repo => repo.BoardExistsAsync(boardId), Times.Once);
+            _boardRepositoryMock.Verify(repo => repo.GetBoardColumnsAsync(boardId), Times.Once);
         }
 
         [Fact]
@@ -280,6 +286,11 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
             var boardId = 2;
             var columns = new List<BoardColumn>();
 
+            // FIXED: Mock BoardExistsAsync to return true
+            _boardRepositoryMock
+                .Setup(repo => repo.BoardExistsAsync(boardId))
+                .ReturnsAsync(true);
+
             _boardRepositoryMock
                 .Setup(repo => repo.GetBoardColumnsAsync(boardId))
                 .ReturnsAsync(columns);
@@ -287,7 +298,7 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
             _mapperMock.Setup(m => m.Map<List<BoardColumnDto>>(columns)).Returns(new List<BoardColumnDto>());
 
             var query = new GetBoardColumnsByBoardIdQuery(boardId);
-            var handler = new GetBoardColumnsByBoardIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _columnLoggerMock.Object); // FIXED
+            var handler = new GetBoardColumnsByBoardIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _columnLoggerMock.Object);
 
             // Act
             var result = await handler.Handle(query, CancellationToken.None);
@@ -296,6 +307,7 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
             Assert.NotNull(result);
             Assert.Empty(result);
 
+            _boardRepositoryMock.Verify(repo => repo.BoardExistsAsync(boardId), Times.Once);
             _boardRepositoryMock.Verify(repo => repo.GetBoardColumnsAsync(boardId), Times.Once);
         }
 
@@ -318,6 +330,11 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
                 Position = c.Position
             }).ToList();
 
+            // FIXED: Mock BoardExistsAsync to return true
+            _boardRepositoryMock
+                .Setup(repo => repo.BoardExistsAsync(boardId))
+                .ReturnsAsync(true);
+
             _boardRepositoryMock
                 .Setup(repo => repo.GetBoardColumnsAsync(boardId))
                 .ReturnsAsync(columns.OrderBy(c => c.Position).ToList());
@@ -325,7 +342,7 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
             _mapperMock.Setup(m => m.Map<List<BoardColumnDto>>(It.IsAny<List<BoardColumn>>())).Returns(columnDtos);
 
             var query = new GetBoardColumnsByBoardIdQuery(boardId);
-            var handler = new GetBoardColumnsByBoardIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _columnLoggerMock.Object); // FIXED
+            var handler = new GetBoardColumnsByBoardIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _columnLoggerMock.Object);
 
             // Act
             var result = await handler.Handle(query, CancellationToken.None);
@@ -341,15 +358,17 @@ namespace BACKEND_CQRS.Test.Handler.QueryHandlers
         {
             // Arrange
             var boardId = 4;
+            
+            // FIXED: Mock BoardExistsAsync to return false, which causes KeyNotFoundException
             _boardRepositoryMock
-                .Setup(repo => repo.GetBoardColumnsAsync(boardId))
-                .ThrowsAsync(new InvalidOperationException("Database error"));
+                .Setup(repo => repo.BoardExistsAsync(boardId))
+                .ReturnsAsync(false);
 
             var query = new GetBoardColumnsByBoardIdQuery(boardId);
-            var handler = new GetBoardColumnsByBoardIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _columnLoggerMock.Object); // FIXED
+            var handler = new GetBoardColumnsByBoardIdQueryHandler(_boardRepositoryMock.Object, _mapperMock.Object, _columnLoggerMock.Object);
 
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            // Act & Assert - FIXED: Expect KeyNotFoundException instead of InvalidOperationException
+            await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
                 await handler.Handle(query, CancellationToken.None));
         }
 
