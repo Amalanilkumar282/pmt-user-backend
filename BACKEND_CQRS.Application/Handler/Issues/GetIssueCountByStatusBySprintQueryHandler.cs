@@ -42,9 +42,9 @@ namespace BACKEND_CQRS.Application.Handler.Issues
                     "No issues found for the specified sprint.");
             }
 
-            // Get status names for "To Do" and "Done"
-            var toDoStatus = await _statusRepository.GetStatusByNameAsync("To Do");
-            var doneStatus = await _statusRepository.GetStatusByNameAsync("Done");
+            // Get status names - look specifically for "TO_DO" and "DONE"
+            var toDoStatus = await _statusRepository.GetStatusByNameAsync("TO_DO");
+            var doneStatus = await _statusRepository.GetStatusByNameAsync("DONE");
 
             var toDoCount = 0;
             var inProgressCount = 0;

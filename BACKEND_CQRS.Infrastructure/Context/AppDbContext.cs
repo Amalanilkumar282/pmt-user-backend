@@ -35,6 +35,8 @@ namespace BACKEND_CQRS.Infrastructure.Context
         public DbSet<Epic> Epic { get; set; }
 
         public DbSet<Role> Roles { get; set; }
+        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<RolePermission> RolePermissions { get; set; }
         
         public DbSet<Mention> Mentions { get; set; }
         public DbSet<DeliveryUnit> DeliveryUnits { get; set; }

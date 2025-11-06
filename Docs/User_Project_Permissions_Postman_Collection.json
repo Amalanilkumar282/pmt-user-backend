@@ -1,0 +1,211 @@
+{
+  "info": {
+    "name": "User Project Permissions API",
+    "description": "API endpoints for managing and retrieving user permissions in projects",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "    pm.collectionVariables.set('userId', jsonData.data.userId);",
+                  "    console.log('Tokens saved successfully');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"your-password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Permissions",
+      "item": [
+        {
+          "name": "Get User Permissions for Project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/permission/user/{{userId}}/project/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "permission", "user", "{{userId}}", "project", "{{projectId}}"]
+            },
+            "description": "Get permissions for a specific user in a specific project"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/permission/user/5/project/3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "permission", "user", "5", "project", "3fa85f64-5717-4562-b3fc-2c963f66afa6"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": 200,\n  \"data\": {\n    \"userId\": 5,\n    \"userName\": \"John Doe\",\n    \"userEmail\": \"john.doe@example.com\",\n    \"projectId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"projectName\": \"PMT User Backend\",\n    \"roleId\": 2,\n    \"roleName\": \"Developer\",\n    \"isOwner\": false,\n    \"addedAt\": \"2025-01-15T10:30:00Z\",\n    \"permissions\": [\n      {\n        \"id\": 1,\n        \"name\": \"project.read\",\n        \"description\": \"Can view project details\"\n      },\n      {\n        \"id\": 2,\n        \"name\": \"project.update\",\n        \"description\": \"Can update project\"\n      },\n      {\n        \"id\": 5,\n        \"name\": \"team.manage\",\n        \"description\": \"Can manage teams\"\n      }\n    ],\n    \"permissionFlags\": {\n      \"canCreateProject\": false,\n      \"canReadProject\": true,\n      \"canUpdateProject\": true,\n      \"canDeleteProject\": false,\n      \"canManageTeams\": true,\n      \"canManageUsers\": false\n    }\n  },\n  \"succeeded\": true,\n  \"message\": \"Successfully retrieved permissions for user 'John Doe' in project 'PMT User Backend'.\",\n  \"errors\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Permissions for Project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/permission/me/project/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "permission", "me", "project", "{{projectId}}"]
+            },
+            "description": "Get permissions for the current logged-in user in a specific project"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/permission/me/project/3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "permission", "me", "project", "3fa85f64-5717-4562-b3fc-2c963f66afa6"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": 200,\n  \"data\": {\n    \"userId\": 5,\n    \"userName\": \"John Doe\",\n    \"userEmail\": \"john.doe@example.com\",\n    \"projectId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"projectName\": \"PMT User Backend\",\n    \"roleId\": 2,\n    \"roleName\": \"Developer\",\n    \"isOwner\": false,\n    \"addedAt\": \"2025-01-15T10:30:00Z\",\n    \"permissions\": [\n      {\n        \"id\": 1,\n        \"name\": \"project.read\",\n        \"description\": \"Can view project details\"\n      },\n      {\n        \"id\": 2,\n        \"name\": \"project.update\",\n        \"description\": \"Can update project\"\n      },\n      {\n        \"id\": 5,\n        \"name\": \"team.manage\",\n        \"description\": \"Can manage teams\"\n      }\n    ],\n    \"permissionFlags\": {\n      \"canCreateProject\": false,\n      \"canReadProject\": true,\n      \"canUpdateProject\": true,\n      \"canDeleteProject\": false,\n      \"canManageTeams\": true,\n      \"canManageUsers\": false\n    }\n  },\n  \"succeeded\": true,\n  \"message\": \"Successfully retrieved permissions for user 'John Doe' in project 'PMT User Backend'.\",\n  \"errors\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Setup Data (Optional)",
+      "item": [
+        {
+          "name": "Add User to Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"userId\": 5,\n  \"roleId\": 2,\n  \"addedBy\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/project/member",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "project", "member"]
+            },
+            "description": "Add a user to a project with a specific role"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "role"]
+            },
+            "description": "Get all available roles"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "projectId",
+      "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "type": "string"
+    }
+  ]
+}

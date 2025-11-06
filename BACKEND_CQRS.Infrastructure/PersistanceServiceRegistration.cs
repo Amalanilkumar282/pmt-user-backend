@@ -39,6 +39,7 @@ namespace BACKEND_CQRS.Infrastructure
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IEpicRepository, EpicRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IPermissionRepository, PermissionRepository>();
 
             //services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 
