@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BACKEND_CQRS.Application\BACKEND_CQRS.Application.csproj" />
     <ProjectReference Include="..\BACKEND_CQRS.Domain\BACKEND_CQRS.Domain.csproj" />
+    <ProjectReference Include="..\BACKEND_CQRS.Api\BACKEND_CQRS.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>
